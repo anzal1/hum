@@ -1,4 +1,5 @@
 :root {
+  --p1: 255 196 150; --p2: 140 70 200; --p3: 60 90 200; --p4: 200 90 70;
   color-scheme: dark;
   --bg: #07060a;
   --text: #f6f2ec;
@@ -477,14 +478,41 @@ body.np-open #stage { z-index: 35; border-radius: 22px; box-shadow: 0 50px 120px
 
 /* ---------- notch mode: a black island that hangs from the top edge ---------- */
 
+@property --spin { syntax: '<angle>'; inherits: true; initial-value: 0deg; }
 #island {
   position: fixed; z-index: 29; top: max(6px, env(safe-area-inset-top)); left: 50%; translate: -50% 0;
-  width: var(--iw, 220px); height: 38px; border-radius: 20px; overflow: hidden; display: none;
-  background: #000; color: #fff; box-shadow: 0 14px 40px -12px rgb(0 0 0 / 0.85), 0 0 0 1px rgb(255 255 255 / 0.07);
+  width: var(--iw, 220px); height: 38px; border-radius: 20px; display: none; color: #fff;
   transition: width 0.55s var(--spring), height 0.55s var(--spring), border-radius 0.55s var(--spring), scale 0.3s var(--spring), opacity 0.3s;
 }
 body.notch.has-track:not(.np-open) #island { display: block; }
 #island.bump { scale: 1.04; }
+/* molten light from the song's colours, bleeding out around the island */
+.isl-glow {
+  position: absolute; inset: -12px; z-index: -1; border-radius: inherit; pointer-events: none;
+  background: conic-gradient(from var(--spin), rgb(var(--p1)), rgb(var(--p2)), rgb(var(--p3)), rgb(var(--p4)), rgb(var(--p1)));
+  filter: blur(20px) saturate(1.5); opacity: 0.65; transition: opacity 0.6s, inset 0.55s var(--spring);
+  animation: spin 7s linear infinite;
+}
+body.playing .isl-glow { opacity: 0.92; }
+#island.bump .isl-glow { opacity: 1; inset: -14px; }
+#island.open .isl-glow { inset: -16px; opacity: 0.7; }
+@keyframes spin { to { --spin: 360deg; } }
+.isl-body {
+  position: absolute; inset: 0; overflow: hidden; border-radius: inherit; background: #000;
+  box-shadow: 0 14px 40px -12px rgb(0 0 0 / 0.85), inset 0 0 0 1px rgb(255 255 255 / 0.08);
+}
+/* slow liquid shading inside the black */
+.isl-body::before {
+  content: ''; position: absolute; inset: -60%; pointer-events: none; opacity: 0.42; mix-blend-mode: screen;
+  background:
+    radial-gradient(30% 40% at 30% 40%, rgb(var(--p2) / 0.9), transparent 70%),
+    radial-gradient(35% 45% at 70% 60%, rgb(var(--p3) / 0.8), transparent 70%),
+    radial-gradient(25% 35% at 55% 30%, rgb(var(--p1) / 0.7), transparent 70%);
+  filter: blur(18px); animation: molten 12s ease-in-out infinite alternate;
+}
+#island.open .isl-body::before { opacity: 0.3; }
+@keyframes molten { 0% { transform: translate(-8%, -6%) rotate(0deg) scale(1); } 100% { transform: translate(8%, 6%) rotate(40deg) scale(1.15); } }
+.isl-compact, .isl-full { z-index: 1; }
 #island.open { width: min(440px, calc(100vw - 20px)); height: 212px; border-radius: 34px; }
 .isl-compact { position: absolute; inset: 0; display: flex; align-items: center; gap: 10px; padding: 0 12px 0 7px; transition: opacity 0.2s; cursor: pointer; }
 #island.open .isl-compact { opacity: 0; pointer-events: none; }
@@ -512,7 +540,7 @@ body.playing .isl-bars i { animation: eq 0.9s ease-in-out infinite; }
 /* make room for the island and drop the bottom bar */
 body.notch { --notch: 50px; }
 body.notch.has-track #top { padding-top: calc(14px + var(--notch)); }
-body.notch.has-track #mini { top: var(--notch); }
+body.notch.has-track #mini { top: 0; height: calc(64px + var(--notch)); padding-top: var(--notch); }
 body.notch #dock { transform: translateY(140%); opacity: 0; pointer-events: none; }
 body.notch #pip-slot { bottom: max(14px, env(safe-area-inset-bottom)); }
 body.notch.has-track #app { padding-bottom: 250px; }

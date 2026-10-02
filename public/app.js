@@ -160,7 +160,9 @@ function showTrack(t) {
       .then((p) => {
       if (!p || current() !== t) return;
       aurora.setColors(p.colors);
-      document.documentElement.style.setProperty('--accent', p.accent.join(' '));
+      const root = document.documentElement.style;
+      root.setProperty('--accent', p.accent.join(' '));
+      [p.accent, ...p.colors.slice(0, 3)].forEach((c, i) => root.setProperty(`--p${i + 1}`, c.join(' ')));
     });
   }
   if ('mediaSession' in navigator && t.title) {
@@ -769,8 +771,17 @@ function playResult(i) {
   engine.playList([{ ...t }], 0, { name: `“${input.value.trim() || t.title}”`, href: location.hash }, { keepOrder: true });
 }
 
-// The hero search scrolls away on the home page. A slim bar takes over.
-new IntersectionObserver(([e]) => body.classList.toggle('scrolled', !e.isIntersecting), { rootMargin: '-64px 0px 0px 0px' }).observe($('.search'));
+// The hero search scrolls away on the home page. A slim bar takes over before
+// the search box can slide under anything pinned to the top (like the notch island).
+let scrollFrame = 0;
+const checkScrolled = () => {
+  scrollFrame = 0;
+  const notchRoom = body.classList.contains('notch') && body.classList.contains('has-track') ? 50 : 0;
+  body.classList.toggle('scrolled', $('.search').getBoundingClientRect().top < notchRoom + 64);
+};
+addEventListener('scroll', () => scrollFrame || (scrollFrame = requestAnimationFrame(checkScrolled)), { passive: true });
+addEventListener('resize', checkScrolled);
+checkScrolled();
 
 // ---------- interactions ----------
 
@@ -840,6 +851,7 @@ const actions = {
     lastRect = null;
     placeStage();
     fitIsland();
+    checkScrolled();
     toast(on ? 'Notch mode on. Hover the island to open it.' : 'Back to the bottom bar');
   },
   async install() {
@@ -1031,6 +1043,7 @@ function shareState() {
     liked: isLiked(t),
     line: bridgeLine,
     accent: getComputedStyle(document.documentElement).getPropertyValue('--accent').trim(),
+    palette: [1, 2, 3, 4].map((i) => getComputedStyle(document.documentElement).getPropertyValue(`--p${i}`).trim()),
     at: Date.now(),
   });
 }

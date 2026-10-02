@@ -30,6 +30,12 @@ function paint() {
   $('[data-cmd="toggle"]').innerHTML = icon(s?.playing ? 'pause' : 'play');
   if (!s?.track) return;
   if (s.accent) document.documentElement.style.setProperty('--accent', s.accent);
+  (s.palette || []).forEach((c, i) => c && document.documentElement.style.setProperty(`--p${i + 1}`, c));
+  if (s.line && s.line !== paint.lastLine && !n.classList.contains('open')) {
+    n.classList.add('bump');
+    setTimeout(() => n.classList.remove('bump'), 280);
+  }
+  paint.lastLine = s.line;
   for (const img of [$('.art'), $('.big')]) if (s.art && img.src !== s.art) img.src = s.art;
   $('.title').textContent = s.track.title;
   $('.artist').textContent = s.track.artist;
