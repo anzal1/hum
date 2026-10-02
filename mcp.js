@@ -19,7 +19,7 @@ const log = (...a) => console.error('[hum]', ...a);
 
 // ---------- player card (MCP Apps) ----------
 
-const VERSION = '0.2.4';
+const VERSION = '0.2.5';
 // The version is part of the card's address, so a host that caches UI resources by
 // URI can never show an older card after an update.
 const UI_URI = `ui://hum/player-${VERSION}`;
@@ -909,6 +909,7 @@ createInterface({ input: process.stdin }).on('line', async (line) => {
   if (id === undefined) return; // notifications
   try {
     if (method === 'initialize') {
+      log(`connected by ${params?.clientInfo?.name || '?'} ${params?.clientInfo?.version || ''}, capabilities ${JSON.stringify(params?.capabilities || {}).slice(0, 300)}`);
       const ext = params?.capabilities?.extensions?.[UI_EXT];
       // HUM_UI=0 turns the card off, HUM_UI=1 forces it on for hosts that do not announce support.
       UI = process.env.HUM_UI === '1' || (process.env.HUM_UI !== '0' && Array.isArray(ext?.mimeTypes) && ext.mimeTypes.includes(UI_MIME));
@@ -927,6 +928,7 @@ createInterface({ input: process.stdin }).on('line', async (line) => {
     }
     if (method === 'ping') return out({ id, result: {} });
     if (method === 'tools/list') return out({ id, result: { tools: toolList() } });
+    if (method === 'resources/list' || method === 'tools/list') log(`${method} asked`);
     if (UI && method === 'resources/list')
       return out({ id, result: { resources: [{ uri: UI_URI, name: 'hum player', description: 'The hum music player card.', mimeType: UI_MIME, _meta: UI_RESOURCE_META }] } });
     if (UI && method === 'resources/templates/list') return out({ id, result: { resourceTemplates: [] } });
