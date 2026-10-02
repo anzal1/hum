@@ -19,7 +19,10 @@ const log = (...a) => console.error('[hum]', ...a);
 
 // ---------- player card (MCP Apps) ----------
 
-const UI_URI = 'ui://hum/player';
+const VERSION = '0.2.2';
+// The version is part of the card's address, so a host that caches UI resources by
+// URI can never show an older card after an update.
+const UI_URI = `ui://hum/player-${VERSION}`;
 const UI_MIME = 'text/html;profile=mcp-app';
 const UI_EXT = 'io.modelcontextprotocol/ui';
 // The card is hum's own widget, framed from hum's site, so YouTube sees a real page and referrer.
@@ -868,7 +871,7 @@ ${paintSource()}
   setTimeout(function () { if (!ready) enterRemote('timeout'); }, 8000);
   frame.src = ORIGIN + '/widget.html?card=1';
 
-  ask('ui/initialize', { appInfo: { name: 'hum-card', version: '0.2.1' }, appCapabilities: {}, protocolVersion: '2026-01-26' }).then(function (r) {
+  ask('ui/initialize', { appInfo: { name: 'hum-card', version: ${JSON.stringify(VERSION)} }, appCapabilities: {}, protocolVersion: '2026-01-26' }).then(function (r) {
     var info = r && r.hostContext && r.hostContext.toolInfo;
     toolName = (info && info.tool && info.tool.name) || '';
     post({ method: 'ui/notifications/initialized', params: {} });
@@ -910,7 +913,7 @@ createInterface({ input: process.stdin }).on('line', async (line) => {
         result: {
           protocolVersion: params?.protocolVersion || '2025-06-18',
           capabilities: UI ? { tools: {}, resources: {} } : { tools: {} },
-          serverInfo: { name: 'hum', version: '0.2.1' },
+          serverInfo: { name: 'hum', version: VERSION },
           instructions:
             'hum plays any song for free in the user\'s browser. Use station for background music while working, play for a specific song.' +
             (UI ? ' The player shows up as a card in the chat. If music does not start, tell the user to tap the card once (or to click the hum browser tab once, if the card says so).' : ''),
