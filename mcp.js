@@ -19,7 +19,7 @@ const log = (...a) => console.error('[hum]', ...a);
 
 // ---------- player card (MCP Apps) ----------
 
-const VERSION = '0.2.2';
+const VERSION = '0.2.3';
 // The version is part of the card's address, so a host that caches UI resources by
 // URI can never show an older card after an update.
 const UI_URI = `ui://hum/player-${VERSION}`;
@@ -926,10 +926,14 @@ createInterface({ input: process.stdin }).on('line', async (line) => {
       return out({ id, result: { resources: [{ uri: UI_URI, name: 'hum player', description: 'The hum music player card.', mimeType: UI_MIME, _meta: UI_RESOURCE_META }] } });
     if (UI && method === 'resources/templates/list') return out({ id, result: { resourceTemplates: [] } });
     if (UI && method === 'resources/read') {
-      if (params?.uri !== UI_URI) return out({ id, error: { code: -32002, message: `Resource not found: ${params?.uri}` } });
-      return out({ id, result: { contents: [{ uri: UI_URI, mimeType: UI_MIME, text: shell(), _meta: UI_RESOURCE_META }] } });
+      log(`card requested: ${params?.uri}`);
+      // Any hum card address, old or new, gets today's card: a host holding an older tool list
+      // still shows the current player.
+      if (!/^ui:\/\/hum\/player(-[\w.]+)?$/.test(params?.uri || '')) return out({ id, error: { code: -32002, message: `Resource not found: ${params?.uri}` } });
+      return out({ id, result: { contents: [{ uri: params.uri, mimeType: UI_MIME, text: shell(), _meta: UI_RESOURCE_META }] } });
     }
     if (method === 'tools/call') {
+      if (!/^(card_sync|remote_sync)$/.test(params?.name)) log(`tool: ${params?.name}`);
       // The card's own calls must never wait behind a control call that is waiting for them.
       const appTool = { card_sync: cardSync, card_fallback: cardFallback, remote_sync: remoteSync, remote_cmd: remoteCmd }[params.name];
       if (appTool) {

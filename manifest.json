@@ -2,7 +2,7 @@
   "manifest_version": "0.3",
   "name": "hum",
   "display_name": "hum",
-  "version": "0.2.2",
+  "version": "0.2.3",
   "description": "Play any song for free while you work. Ask Claude for a song or a mood and it plays in a hum browser tab.",
   "long_description": "hum is a free music player that plays through YouTube's official embed. This extension lets Claude be the remote: ask for a song, an endless mood station, or a Spotify playlist link, then pause, skip, change the volume, or ask what is playing and which lyric line is being sung. The first time you ask for music, hum starts a small server on your machine and opens itself in your browser. Music plays in that browser tab, so click the tab once to let the browser allow sound. hum keeps no account and collects nothing about you. The only requests it makes are searches to YouTube Music, Spotify's public embed page for playlist links, and LRCLIB for lyrics.",
   "author": {
