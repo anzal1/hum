@@ -19,7 +19,7 @@ const log = (...a) => console.error('[hum]', ...a);
 
 // ---------- player card (MCP Apps) ----------
 
-const VERSION = '0.2.3';
+const VERSION = '0.2.4';
 // The version is part of the card's address, so a host that caches UI resources by
 // URI can never show an older card after an update.
 const UI_URI = `ui://hum/player-${VERSION}`;
@@ -901,6 +901,11 @@ createInterface({ input: process.stdin }).on('line', async (line) => {
     return;
   }
   const { id, method, params } = msg;
+  // Tell the host its saved tools and card may be stale, so it fetches them again.
+  if (method === 'notifications/initialized' && UI) {
+    out({ method: 'notifications/tools/list_changed' });
+    out({ method: 'notifications/resources/list_changed' });
+  }
   if (id === undefined) return; // notifications
   try {
     if (method === 'initialize') {
@@ -912,7 +917,7 @@ createInterface({ input: process.stdin }).on('line', async (line) => {
         id,
         result: {
           protocolVersion: params?.protocolVersion || '2025-06-18',
-          capabilities: UI ? { tools: {}, resources: {} } : { tools: {} },
+          capabilities: UI ? { tools: { listChanged: true }, resources: { listChanged: true } } : { tools: {} },
           serverInfo: { name: 'hum', version: VERSION },
           instructions:
             'hum plays any song for free in the user\'s browser. Use station for background music while working, play for a specific song.' +
