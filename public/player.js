@@ -1,15 +1,15 @@
 // Thin wrapper over YouTube's official IFrame Player. Playback stays inside
 // YouTube's own player, so ads and rights holders are handled the normal way.
 // The YouTube script is heavy, so nothing loads until music is close to playing.
-let apiReady;
-const loadApi = () =>
-  (apiReady ||= new Promise((resolve) => {
-    if (window.YT?.Player) return resolve();
-    window.onYouTubeIframeAPIReady = resolve;
-    const s = document.createElement('script');
+// Loaded once per window: the pop-out keeps its player in its own frame.
+const loadApi = (win = window) =>
+  (win.__humYT ||= new Promise((resolve) => {
+    if (win.YT?.Player) return resolve();
+    win.onYouTubeIframeAPIReady = resolve;
+    const s = win.document.createElement('script');
     s.src = 'https://www.youtube.com/iframe_api';
     s.async = true;
-    document.head.append(s);
+    win.document.head.append(s);
   }));
 
 export class Player extends EventTarget {
@@ -20,10 +20,11 @@ export class Player extends EventTarget {
   }
   // Safe to call many times. Call it early (hover, focus, idle) to make the first play instant.
   warm() {
-    return (this.ready ||= loadApi().then(
+    const win = this.el.ownerDocument.defaultView || window;
+    return (this.ready ||= loadApi(win).then(
       () =>
         new Promise((resolve) => {
-          this.yt = new YT.Player(this.el, {
+          this.yt = new win.YT.Player(this.el, {
             width: '100%',
             height: '100%',
             playerVars: { playsinline: 1, controls: 0, disablekb: 1, rel: 0, iv_load_policy: 3, fs: 0, origin: location.origin },
@@ -38,7 +39,9 @@ export class Player extends EventTarget {
   }
   // Move playback into another container, even in another window (the pop-out
   // mini player). An iframe cannot change documents without reloading, so the
-  // player is rebuilt there and picks up from the same second.
+  // player is rebuilt there and picks up from the same second. A window without
+  // an address of its own (about:blank) gets a frame of ours to hold the player,
+  // or YouTube sees no referrer and refuses to play (error 153).
   async moveTo(container, { resume } = {}) {
     const id = this.yt?.getVideoData?.()?.video_id;
     const at = this.time;
@@ -48,8 +51,20 @@ export class Player extends EventTarget {
     } catch {}
     this.yt = null;
     this.ready = null;
-    const el = container.ownerDocument.createElement('div');
-    container.replaceChildren(el);
+    let host = container;
+    if (container.ownerDocument.defaultView?.location.protocol === 'about:') {
+      const f = container.ownerDocument.createElement('iframe');
+      f.allow = 'autoplay; encrypted-media; picture-in-picture';
+      f.title = 'Player';
+      f.style.cssText = 'width:100%;height:100%;border:0;display:block';
+      const loaded = new Promise((r) => f.addEventListener('load', r, { once: true }));
+      f.src = new URL('player-frame.html', location.href).href;
+      container.replaceChildren(f);
+      await loaded;
+      host = f.contentDocument.body;
+    }
+    const el = host.ownerDocument.createElement('div');
+    host.replaceChildren(el);
     this.el = el;
     await this.warm();
     if (id) await this.load(id, { autoplay: wasPlaying, start: Math.floor(at) });
