@@ -13,14 +13,16 @@
     {
       "src": "https://hum.anzalabidi.dev/icon-512.png",
       "mimeType": "image/png",
-      "sizes": ["512x512"]
+      "sizes": [
+        "512x512"
+      ]
     }
   ],
   "packages": [
     {
       "registryType": "mcpb",
       "identifier": "https://github.com/anzal1/hum/releases/download/v0.2.0/hum.mcpb",
-      "fileSha256": "94ac95ba78e59fed16ab387ead0f70ed7fcfb9f4e1bd6adceebb854143ff35a4",
+      "fileSha256": "9fa66695445a44e9dfb93441d47b34f83f15d83b2e80c04a1db3fe8c3e49d771",
       "transport": {
         "type": "stdio"
       },
