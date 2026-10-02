@@ -36,7 +36,11 @@ function paint() {
     setTimeout(() => n.classList.remove('bump'), 280);
   }
   paint.lastLine = s.line;
-  for (const img of [$('.art'), $('.big')]) if (s.art && img.src !== s.art) img.src = s.art;
+  // Google's image server rate-limits bursts; fall back to YouTube's thumbnail.
+  for (const img of [$('.art'), $('.big')]) {
+    img.onerror = () => s.artFallback && img.src !== s.artFallback && (img.src = s.artFallback);
+    if (s.art && img.dataset.want !== s.art) (img.dataset.want = s.art), (img.src = s.art);
+  }
   $('.title').textContent = s.track.title;
   $('.artist').textContent = s.track.artist;
   const line = s.line || `${s.track.title} · ${s.track.artist}`;

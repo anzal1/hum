@@ -1040,6 +1040,7 @@ function shareState() {
     type: 'state',
     ...engine.snapshot(),
     art: t?.art ? sized(t.art, 240) : t?.id ? `https://i.ytimg.com/vi/${t.id}/mqdefault.jpg` : '',
+    artFallback: t?.id ? `https://i.ytimg.com/vi/${t.playId || t.id}/mqdefault.jpg` : '',
     liked: isLiked(t),
     line: bridgeLine,
     accent: getComputedStyle(document.documentElement).getPropertyValue('--accent').trim(),
