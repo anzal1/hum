@@ -1,0 +1,203 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>hum</title>
+  <meta name="description" content="Every song. Free. Search anything or paste a Spotify playlist. No account, no paywall.">
+  <meta name="theme-color" content="#07060a">
+  <meta property="og:title" content="hum">
+  <meta property="og:description" content="Every song ever made. Free. Paste a Spotify playlist and press play.">
+  <meta property="og:image" content="https://hum.anzalabidi.dev/og.jpg">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:type" content="website">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="hum">
+  <meta name="twitter:description" content="Every song ever made. Free.">
+  <meta name="twitter:image" content="https://hum.anzalabidi.dev/og.jpg">
+  <link rel="icon" href="icon.svg" type="image/svg+xml">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="apple-touch-icon" href="apple-touch-icon.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="hum">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="preconnect" href="https://www.youtube.com">
+  <link rel="preconnect" href="https://i.ytimg.com">
+  <link rel="preconnect" href="https://yt3.googleusercontent.com">
+  <link rel="modulepreload" href="engine.js">
+  <link rel="modulepreload" href="player.js">
+  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@300..800&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body class="home">
+  <canvas id="aurora" aria-hidden="true"></canvas>
+  <div class="veil" aria-hidden="true"></div>
+  <div class="grain" aria-hidden="true"></div>
+
+  <div id="app">
+    <header id="top">
+      <a class="brand" href="#/" aria-label="hum home">hum<span class="brand-dot"></span></a>
+      <div class="hero">
+        <span class="hero-chip"><i></i>Free forever · No sign-up · Run your own</span>
+        <h1 id="headline">Every song. <em>Free.</em></h1>
+        <p class="lede">Search anything, or paste a Spotify playlist and keep listening. No account, no paywall, no skip limits.</p>
+      </div>
+      <label class="search">
+        <span class="search-icon"></span>
+        <input id="q" type="search" placeholder="Search any song, or paste a Spotify link" autocomplete="off" spellcheck="false" enterkeyhint="search">
+        <kbd>/</kbd>
+      </label>
+      <nav class="hero-paths" aria-label="Ways to use hum">
+        <button class="path" data-act="install" hidden><span class="path-icon" data-icon="download"></span>Install the app</button>
+        <a class="path" href="developers.html#host"><span class="path-icon" data-icon="server"></span>Host your own in one click</a>
+        <a class="path" href="developers.html#embed"><span class="path-icon" data-icon="code"></span>Put it in your app</a>
+      </nav>
+      <a class="top-liked" href="#/liked" aria-label="Liked songs"></a>
+    </header>
+    <div id="mini" aria-hidden="true">
+      <a class="brand" href="#/" tabindex="-1">hum<span class="brand-dot"></span></a>
+      <button class="mini-search" data-act="search" tabindex="-1"><span class="search-icon"></span>Search or paste a link<kbd>/</kbd></button>
+      <a class="top-liked" href="#/liked" tabindex="-1" aria-label="Liked songs"></a>
+    </div>
+    <main id="view" tabindex="-1"></main>
+  </div>
+
+  <div id="island" aria-label="Now playing">
+    <div class="isl-compact">
+      <img class="isl-art js-art" alt="">
+      <span class="isl-line"></span>
+      <span class="isl-bars" aria-hidden="true"><i></i><i></i><i></i><i></i></span>
+    </div>
+    <div class="isl-full">
+      <div class="isl-top">
+        <img class="isl-big js-art" alt="" data-act="open">
+        <div class="isl-text"><b class="js-title"></b><span class="js-artist"></span></div>
+        <button class="icon-btn small js-like" data-act="like" aria-label="Like"></button>
+      </div>
+      <p class="isl-lyric"></p>
+      <div class="progress isl-progress">
+        <span class="js-cur">0:00</span>
+        <div class="bar" role="slider" aria-label="Seek" tabindex="0"><div class="bar-track"><div class="bar-fill js-fill"></div></div></div>
+        <span class="js-dur">0:00</span>
+      </div>
+      <div class="isl-controls">
+        <button class="icon-btn small js-shuffle" data-act="shuffle" aria-label="Shuffle"></button>
+        <button class="icon-btn" data-act="prev" aria-label="Previous"></button>
+        <button class="play js-play" data-act="toggle" aria-label="Play"></button>
+        <button class="icon-btn" data-act="next" aria-label="Next"></button>
+        <button class="icon-btn small" data-act="notch" aria-label="Back to the bottom bar" title="Back to the bottom bar (N)"></button>
+      </div>
+    </div>
+  </div>
+
+  <div id="pip-slot" aria-hidden="true"></div>
+
+  <aside id="side" aria-label="Now playing">
+    <div class="side-head">
+      <span>Now playing</span>
+      <div>
+        <button class="icon-btn small pip-btn" data-act="popout" aria-label="Pop out mini player" title="Pop out (P)"></button>
+        <button class="icon-btn small" data-act="open" aria-label="Open full player"></button>
+        <button class="icon-btn small" data-act="side-toggle" aria-label="Hide panel"></button>
+      </div>
+    </div>
+    <div id="side-slot"></div>
+    <div class="side-meta">
+      <div class="side-text"><b class="js-title"></b><span class="js-artist"></span></div>
+      <button class="icon-btn js-like" data-act="like" aria-label="Like"></button>
+    </div>
+    <p class="side-line" data-act="lyrics"></p>
+    <div class="side-next">
+      <div class="q-label">Up next</div>
+      <div id="side-queue"></div>
+    </div>
+  </aside>
+
+  <section id="np" aria-label="Now playing" aria-hidden="true">
+    <div class="np-top">
+      <button class="icon-btn" data-act="close" aria-label="Close player"></button>
+      <div class="np-from">Playing from <a id="np-ctx" href="#/">Search</a></div>
+      <div class="np-actions">
+        <button class="icon-btn pip-btn" data-act="popout" aria-label="Pop out mini player" title="Pop out (P)"></button>
+        <button class="icon-btn" data-act="share" aria-label="Copy link to this song"></button>
+      </div>
+    </div>
+    <div class="np-body">
+      <div class="np-left">
+        <div id="np-slot"></div>
+        <div class="np-meta">
+          <div class="np-text">
+            <h2 class="js-title"></h2>
+            <p class="js-artist"></p>
+          </div>
+          <button class="icon-btn js-like" data-act="like" aria-label="Like"></button>
+        </div>
+        <div class="progress">
+          <span class="js-cur">0:00</span>
+          <div class="bar" role="slider" aria-label="Seek" tabindex="0"><div class="bar-track"><div class="bar-fill js-fill"></div></div></div>
+          <span class="js-dur">0:00</span>
+        </div>
+        <div class="controls big">
+          <button class="icon-btn js-shuffle" data-act="shuffle" aria-label="Shuffle"></button>
+          <button class="icon-btn" data-act="prev" aria-label="Previous"></button>
+          <button class="play js-play" data-act="toggle" aria-label="Play"></button>
+          <button class="icon-btn" data-act="next" aria-label="Next"></button>
+          <button class="icon-btn js-repeat" data-act="repeat" aria-label="Repeat"></button>
+        </div>
+        <div class="np-volume volume"><button class="icon-btn js-mute" data-act="mute" aria-label="Mute"></button><input class="js-volume" type="range" min="0" max="1" step="0.01" aria-label="Volume"></div>
+      </div>
+      <div class="np-right">
+        <div class="tabs" role="tablist">
+          <button role="tab" data-tab="lyrics" class="on">Lyrics</button>
+          <button role="tab" data-tab="queue">Up next</button>
+          <span class="tab-ink"></span>
+        </div>
+        <div id="lyrics" class="lyrics panel"></div>
+        <div id="queue" class="panel" hidden></div>
+      </div>
+    </div>
+  </section>
+
+  <div id="stage" class="off"><div id="yt"></div></div>
+
+  <footer id="dock" class="off">
+    <div class="dock-line"><div class="js-fill"></div></div>
+    <div class="d-left" data-act="open">
+      <img class="js-art" alt="">
+      <div class="d-text"><b class="js-title"></b><span class="js-artist"></span></div>
+      <button class="icon-btn js-like" data-act="like" aria-label="Like"></button>
+    </div>
+    <div class="d-center">
+      <div class="controls">
+        <button class="icon-btn js-shuffle hide-s" data-act="shuffle" aria-label="Shuffle"></button>
+        <button class="icon-btn hide-s" data-act="prev" aria-label="Previous"></button>
+        <button class="play js-play" data-act="toggle" aria-label="Play"></button>
+        <button class="icon-btn" data-act="next" aria-label="Next"></button>
+        <button class="icon-btn js-repeat hide-s" data-act="repeat" aria-label="Repeat"></button>
+      </div>
+      <div class="progress hide-s">
+        <span class="js-cur">0:00</span>
+        <div class="bar" role="slider" aria-label="Seek" tabindex="0"><div class="bar-track"><div class="bar-fill js-fill"></div></div></div>
+        <span class="js-dur">0:00</span>
+      </div>
+    </div>
+    <div class="d-right hide-s">
+      <button class="icon-btn" data-act="lyrics" aria-label="Lyrics"></button>
+      <button class="icon-btn" data-act="queue" aria-label="Up next"></button>
+      <div class="volume"><button class="icon-btn js-mute" data-act="mute" aria-label="Mute"></button><input class="js-volume" type="range" min="0" max="1" step="0.01" aria-label="Volume"></div>
+      <button class="icon-btn pip-btn" data-act="popout" aria-label="Pop out mini player" title="Pop out (P)"></button>
+      <button class="icon-btn side-btn" data-act="side-toggle" aria-label="Now playing panel"></button>
+      <button class="icon-btn" data-act="notch" aria-label="Notch mode" title="Notch mode (N)"></button>
+      <button class="icon-btn" data-act="open" aria-label="Open player"></button>
+    </div>
+    <button class="icon-btn notch-s" data-act="notch" aria-label="Notch mode"></button>
+  </footer>
+
+  <button id="tap" data-act="tap"><span class="tap-ring"></span><span>Tap to start the music</span></button>
+  <div id="toasts" aria-live="polite"></div>
+  <script type="module" src="app.js"></script>
+</body>
+</html>

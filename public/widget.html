@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>hum player</title>
+  <link rel="icon" href="icon.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="preconnect" href="https://www.youtube.com">
+  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400..700&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="widget.css">
+</head>
+<body>
+  <canvas id="aurora" aria-hidden="true"></canvas>
+  <div class="w">
+    <div class="w-screen">
+      <div id="yt"></div>
+      <div class="w-idle">
+        <a class="w-brand" href="./" target="_blank" rel="noopener">hum<span></span></a>
+        <p>Every song ever made. Pick a mood or search.</p>
+      </div>
+    </div>
+
+    <div class="w-meta">
+      <div class="w-text">
+        <b class="w-title">Nothing playing</b>
+        <span class="w-artist">Search below or tap a mood</span>
+      </div>
+      <button class="w-open w-hide" data-w="hide" aria-label="Hide player" title="Hide (pauses the music)" hidden>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M5 12h14"/></svg>
+      </button>
+      <a class="w-open" href="./" target="_blank" rel="noopener" aria-label="Open the full hum app" title="Open hum">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h6v6"/><path d="M10 14 21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/></svg>
+      </a>
+    </div>
+    <p class="w-line" aria-live="off"></p>
+
+    <div class="w-progress"><div class="w-bar"><div class="w-fill"></div></div><span class="w-time">0:00</span></div>
+
+    <div class="w-controls">
+      <button data-w="prev" aria-label="Previous"></button>
+      <button data-w="toggle" class="w-play" aria-label="Play"></button>
+      <button data-w="next" aria-label="Next"></button>
+    </div>
+
+    <div class="w-bottom">
+      <label class="w-search">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="11" cy="11" r="7.5"/><path d="m20.5 20.5-4.2-4.2"/></svg>
+        <input id="wq" placeholder="Search, or paste a Spotify link" autocomplete="off" spellcheck="false">
+      </label>
+      <div class="w-moods"></div>
+    </div>
+
+    <div class="w-results" hidden></div>
+  </div>
+  <button class="w-tap" data-w="tap" hidden>Tap to start the music</button>
+  <script type="module" src="widget.js"></script>
+</body>
+</html>

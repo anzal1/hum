@@ -1,0 +1,5 @@
+node_modules
+.wrangler
+.DS_Store
+desktop/node_modules
+desktop/dist

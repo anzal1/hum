@@ -1,0 +1,14 @@
+{
+  "name": "hum-desktop",
+  "version": "0.1.0",
+  "private": true,
+  "description": "hum on your desktop, with a live island over the Mac notch (or the top of the screen on Windows).",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "dev": "HUM_URL=http://localhost:3737 electron ."
+  },
+  "devDependencies": {
+    "electron": "^38.0.0"
+  }
+}

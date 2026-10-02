@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>hum for developers</title>
+  <meta name="description" content="Put a free music player in any app, agent or harness with one script tag.">
+  <link rel="icon" href="icon.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400..700&family=Geist+Mono:wght@400;500&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+  <style>
+    :root { color-scheme: dark; --bg: #0b0a0f; --panel: #14121a; --line: rgb(255 255 255 / 0.09); --text: #f6f2ec; --muted: rgb(246 242 236 / 0.62); --accent: #ffc496; }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: var(--bg); color: var(--text); font: 400 16px/1.6 'Geist', system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
+    main { max-width: 760px; margin: 0 auto; padding: 72px 16px 140px; }
+    a { color: var(--accent); }
+    .back { font-size: 14px; color: var(--muted); text-decoration: none; }
+    h1 { font: 400 clamp(48px, 9vw, 84px)/0.95 'Instrument Serif', serif; letter-spacing: -0.03em; margin: 24px 0 18px; }
+    h1 em { color: var(--accent); }
+    h2 { font: 400 32px/1.1 'Instrument Serif', serif; margin: 56px 0 12px; }
+    p { color: var(--muted); max-width: 600px; }
+    pre { margin: 16px 0; padding: 18px 20px; border-radius: 14px; background: var(--panel); border: 1px solid var(--line); overflow-x: auto; font: 13.5px/1.65 'Geist Mono', ui-monospace, monospace; color: #e9e4dc; }
+    code { font-family: 'Geist Mono', ui-monospace, monospace; font-size: 0.9em; }
+    .k { color: #ff9fb8; } .s { color: #a8e6c1; } .c { color: rgb(255 255 255 / 0.4); }
+    .try { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; }
+    .try button { height: 40px; padding: 0 16px; border-radius: 999px; border: 1px solid var(--line); background: var(--panel); color: var(--text); font: 500 14px 'Geist', sans-serif; cursor: pointer; transition: all 0.2s; }
+    .try button:hover { background: #fff; color: #0b0a0f; }
+    #state { margin-top: 14px; font: 13px 'Geist Mono', monospace; color: var(--muted); min-height: 22px; }
+    .ways { display: grid; gap: 12px; margin-top: 20px; }
+    .way { padding: 20px 22px; border-radius: 18px; background: var(--panel); border: 1px solid var(--line); }
+    .way h3 { font: 600 16px 'Geist', sans-serif; display: flex; align-items: center; gap: 10px; }
+    .way h3 span { font: 500 11px 'Geist Mono', monospace; letter-spacing: 0.06em; text-transform: uppercase; color: var(--accent); padding: 3px 8px; border-radius: 6px; background: rgb(255 196 150 / 0.1); }
+    .way p { margin-top: 6px; font-size: 14.5px; }
+    .way pre { margin: 14px 0 0; }
+    .deploy { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 14px; }
+    .btn { display: inline-flex; align-items: center; gap: 8px; height: 42px; padding: 0 18px; border-radius: 999px; font: 600 14px 'Geist', sans-serif; text-decoration: none; transition: transform 0.2s; }
+    .btn:hover { transform: translateY(-1px); }
+    .btn.cf { background: #f6821f; color: #fff; }
+    .btn.vc { background: #fff; color: #000; }
+    .demo-player { width: 360px; max-width: 100%; height: 520px; margin-top: 22px; border-radius: 22px; overflow: hidden; box-shadow: 0 30px 80px -24px rgb(0 0 0 / 0.8), 0 0 0 1px var(--line); }
+    nav.toc { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 22px; }
+    nav.toc a { font-size: 14px; padding: 6px 12px; border-radius: 999px; border: 1px solid var(--line); color: var(--muted); text-decoration: none; }
+    nav.toc a:hover { color: var(--text); border-color: rgb(255 255 255 / 0.25); }
+  </style>
+</head>
+<body>
+  <main>
+    <a class="back" href="./">← Back to hum</a>
+    <h1>Run your own hum. Or put it <em>inside anything.</em></h1>
+    <p>No keys, no database, no accounts. hum is a folder of static files and one tiny function, so it runs free on Cloudflare, on your laptop, or in Docker.</p>
+    <nav class="toc"><a href="#host">Host your own</a><a href="#embed">Embed the player</a><a href="#agents">For coding agents</a></nav>
+
+    <h2 id="host">Host your own</h2>
+    <div class="ways">
+      <div class="way">
+        <h3><span>1 click</span> Your own copy on the internet, free</h3>
+        <p>Sign in to Cloudflare, press deploy, and you get your own hum at a link you can share. Cloudflare's free plan covers 100,000 song searches a day.</p>
+        <div class="deploy">
+          <a class="btn cf" data-deploy="cloudflare" href="#">Deploy to Cloudflare</a>
+          <a class="btn vc" data-deploy="vercel" href="#">Deploy to Vercel</a>
+        </div>
+      </div>
+      <div class="way">
+        <h3><span>1 command</span> On your own computer</h3>
+        <p>Needs Node 18 or newer. Opens in your browser and lets your coding agents control the music.</p>
+        <pre>npx <span class="repo-npx"></span></pre>
+      </div>
+      <div class="way">
+        <h3><span>Desktop</span> With a live island over your Mac's notch</h3>
+        <p>hum in its own window, plus a black island that wraps the MacBook notch and drops down into a mini player when you hover it. On Windows it floats at the top of the screen.</p>
+        <pre>git clone <span class="repo"></span>
+cd hum/desktop &amp;&amp; npm install &amp;&amp; npm start</pre>
+      </div>
+      <div class="way">
+        <h3><span>Docker</span> On a home server or VPS</h3>
+        <pre>git clone <span class="repo"></span>
+cd hum &amp;&amp; docker build -t hum . &amp;&amp; docker run -p 3737:3737 hum</pre>
+      </div>
+    </div>
+
+    <h2 id="embed">Embed the player</h2>
+    <p>One script tag gives any web app, dashboard, IDE panel or agent harness a full player in the corner. Every song, synced lyrics, mood stations and Spotify playlists. The player below is it, mounted inline here. Leave out <code>data-target</code> and it floats in a corner instead.</p>
+
+    <div id="demo-player" class="demo-player"></div>
+
+    <h2>Drop it in</h2>
+    <pre><span class="k">&lt;script</span> src=<span class="s">"<span class="origin"></span>/embed.js"</span> data-station=<span class="s">"lofi beats"</span><span class="k">&gt;&lt;/script&gt;</span></pre>
+    <p>Options: <code>data-station</code>, <code>data-q</code>, <code>data-playlist</code>, <code>data-target</code> (mount inside an element), <code>data-position</code>, <code>data-open="false"</code>.</p>
+
+    <h2>Drive it from code</h2>
+    <pre>hum.<span class="k">play</span>(<span class="s">'Blinding Lights'</span>)
+hum.<span class="k">station</span>(<span class="s">'deep focus'</span>)
+hum.<span class="k">playlist</span>(<span class="s">'https://open.spotify.com/playlist/…'</span>)
+hum.<span class="k">pause</span>()  hum.<span class="k">next</span>()  hum.<span class="k">volume</span>(<span class="s">60</span>)
+hum.<span class="k">on</span>(<span class="s">'state'</span>, s =&gt; console.log(s.track?.title))</pre>
+    <div class="try">
+      <button onclick="hum.station('Aruarian Dance Nujabes')">hum.station('lofi')</button>
+      <button onclick="hum.play('Kesariya')">hum.play('Kesariya')</button>
+      <button onclick="hum.next()">hum.next()</button>
+      <button onclick="hum.pause()">hum.pause()</button>
+      <button onclick="hum.resume()">hum.resume()</button>
+    </div>
+    <div id="state"></div>
+
+    <h2>Or as a plain iframe</h2>
+    <pre><span class="k">&lt;iframe</span> src=<span class="s">"<span class="origin"></span>/widget.html?station=lofi"</span>
+  width=<span class="s">"360"</span> height=<span class="s">"520"</span> allow=<span class="s">"autoplay; encrypted-media"</span><span class="k">&gt;&lt;/iframe&gt;</span></pre>
+    <p>Talk to it with <code>postMessage({ hum: 'play', query: '…' })</code>. It reports back with <code>{ hum: 'state', … }</code> messages.</p>
+
+    <h2 id="agents">For coding agents</h2>
+    <p>Run hum locally and agents get tools like <code>play</code>, <code>station</code>, <code>control</code> and <code>now_playing</code> over MCP. Ask your agent to put on something to focus to.</p>
+    <pre><span class="c"># Claude Code</span>
+claude mcp add hum -- npx -y -p <span class="repo-npx"></span> hum-mcp
+
+<span class="c"># any MCP client</span>
+{ <span class="s">"command"</span>: <span class="s">"npx"</span>, <span class="s">"args"</span>: [<span class="s">"-y"</span>, <span class="s">"-p"</span>, <span class="s">"<span class="repo-npx"></span>"</span>, <span class="s">"hum-mcp"</span>] }</pre>
+    <p>No MCP? The local server speaks plain HTTP too:</p>
+    <pre>curl -X POST localhost:3737/api/remote \
+  -H 'content-type: application/json' -d '{"cmd":"station","mood":"lofi"}'</pre>
+  </main>
+  <script>
+    // One place to change once the code lives somewhere else.
+    const REPO = 'https://github.com/anzal1/hum';
+    document.querySelectorAll('.origin').forEach((el) => (el.textContent = location.origin));
+    document.querySelectorAll('.repo').forEach((el) => (el.textContent = REPO));
+    document.querySelectorAll('.repo-npx').forEach((el) => (el.textContent = REPO.replace('https://github.com/', 'github:')));
+    document.querySelector('[data-deploy="cloudflare"]').href = `https://deploy.workers.cloudflare.com/?url=${REPO}`;
+    document.querySelector('[data-deploy="vercel"]').href = `https://vercel.com/new/clone?repository-url=${encodeURIComponent(REPO)}`;
+  </script>
+  <script src="embed.js" data-target="#demo-player"></script>
+  <script>hum.on('state', (s) => (document.getElementById('state').textContent = s.track ? `${s.playing ? '▶' : '❚❚'} ${s.track.title} · ${s.track.artist}` : ''));</script>
+</body>
+</html>

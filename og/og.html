@@ -1,0 +1,59 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="__og/fonts.css">
+<link rel="stylesheet" href="style.css">
+<style>
+  html, body { margin: 0; width: 1200px; height: 630px; overflow: hidden; background: #07060a; }
+  .og { position: relative; width: 1200px; height: 630px; overflow: hidden; isolation: isolate; }
+  .blob { position: absolute; border-radius: 50%; filter: blur(70px); opacity: .9; z-index: -1; }
+  .b1 { width: 620px; height: 520px; left: -140px; top: -180px; background: #8f3fd9; }
+  .b2 { width: 560px; height: 460px; left: 560px; top: 260px; background: #ff5a3c; opacity: .75; }
+  .b3 { width: 420px; height: 380px; left: 820px; top: -160px; background: #ffb38a; opacity: .55; }
+  .b4 { width: 380px; height: 300px; left: 180px; top: 420px; background: #2c4bd6; opacity: .6; }
+  .grain { position: absolute; inset: 0; opacity: .12; mix-blend-mode: overlay; z-index: 5;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E"); }
+  .copy { position: absolute; left: 72px; top: 70px; z-index: 4; color: #f6f2ec; }
+  .word { font: italic 400 250px/.8 'Instrument Serif', serif; letter-spacing: -.04em; display: flex; align-items: flex-start; gap: 10px;
+    background: linear-gradient(180deg, #fff 35%, rgba(255,255,255,.6)); -webkit-background-clip: text; color: transparent; }
+  .dot { width: 26px; height: 26px; border-radius: 50%; background: #ffc496; box-shadow: 0 0 40px #ffc496, 0 0 90px #ff8a5b; margin-top: 30px; }
+  .tag { margin-top: 34px; font: 400 58px/1 'Instrument Serif', serif; letter-spacing: -.02em; }
+  .tag em { color: #ffc496; }
+  .sub { margin-top: 18px; font: 500 22px 'Geist', sans-serif; color: rgba(246,242,236,.7); letter-spacing: -.01em; }
+  .fan { position: absolute; right: 70px; top: 70px; width: 470px; height: 490px; perspective: 1400px; z-index: 3; }
+  .card { position: absolute; width: 270px; height: 270px; border-radius: 26px; overflow: hidden; box-shadow: 0 40px 80px -24px rgba(0,0,0,.85), 0 0 0 1px rgba(255,255,255,.12); }
+  .card .gen-label { font-size: 36px; }
+  .c1 { left: 0; top: 150px; transform: rotateY(28deg) rotateZ(-10deg); }
+  .c2 { left: 90px; top: 70px; transform: rotateY(18deg) rotateZ(-4deg); }
+  .c3 { left: 190px; top: 10px; transform: rotateY(6deg) rotateZ(3deg) scale(1.08); }
+  .c4 { left: 160px; top: 220px; transform: rotateY(-14deg) rotateZ(9deg) scale(.96); }
+  .pill { position: absolute; z-index: 6; left: 72px; bottom: 58px; display: flex; align-items: center; gap: 14px; padding: 14px 22px 14px 14px; border-radius: 999px;
+    background: rgba(14,12,19,.72); border: 1px solid rgba(255,255,255,.12); backdrop-filter: blur(20px); color: #f6f2ec; font: 600 20px 'Geist', sans-serif; box-shadow: 0 30px 60px -20px rgba(0,0,0,.8); }
+  .play { width: 46px; height: 46px; border-radius: 50%; background: #fff; display: grid; place-items: center; }
+  .play svg { width: 20px; height: 20px; margin-left: 3px; }
+  .bars { display: flex; gap: 4px; align-items: flex-end; height: 26px; margin-left: 6px; flex: none; }
+  .bars i { display: block; flex: none; }
+  .bars i { width: 5px; border-radius: 3px; background: #ffc496; }
+</style>
+</head>
+<body>
+<div class="og">
+  <div class="blob b1"></div><div class="blob b2"></div><div class="blob b3"></div><div class="blob b4"></div>
+  <div class="copy">
+    <div class="word">hum<span class="dot"></span></div>
+    <div class="tag">Every song ever made. <em>Free.</em></div>
+    <div class="sub">Paste a Spotify playlist. Press play. Lyrics, moods, endless mixes.</div>
+  </div>
+  <div class="fan" id="fan"></div>
+  <div class="pill"><span class="play"><svg viewBox="0 0 24 24"><path d="M7 4.6v14.8a1.1 1.1 0 0 0 1.66.95l12.2-7.4a1.1 1.1 0 0 0 0-1.9L8.66 3.65A1.1 1.1 0 0 0 7 4.6z"/></svg></span>Now playing, for free<span class="bars"><i style="height:12px"></i><i style="height:24px"></i><i style="height:17px"></i><i style="height:22px"></i><i style="height:9px"></i></span></div>
+  <div class="grain"></div>
+</div>
+<script type="module">
+  import { genArt, paintArt } from './art.js';
+  const covers = [['midnight drive', 'Midnight Drive', [330, 270, 250]], ['lofi', 'Lo-fi Focus', [175, 205, 220]], ['heartbreak', 'Late Night Heartbreak', [18, 300, 280]], ['sunday', 'Sunday Morning', [40, 15, 330]]];
+  document.getElementById('fan').innerHTML = covers.map(([seed, label, hues], i) => `<div class="card c${i + 1}">${genArt(seed, { label, hues })}</div>`).join('');
+  requestAnimationFrame(() => paintArt(document));
+</script>
+</body>
+</html>

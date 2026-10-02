@@ -1,0 +1,19 @@
+{
+  "name": "hum",
+  "version": "0.1.0",
+  "license": "MIT",
+  "type": "module",
+  "description": "Every song, free. A beautiful music player that plays through YouTube's official embed.",
+  "bin": {
+    "hum": "bin/hum.js",
+    "hum-mcp": "mcp.js"
+  },
+  "files": ["api", "bin", "public", "server.js", "mcp.js", "worker.js"],
+  "scripts": {
+    "start": "node server.js",
+    "deploy": "npx wrangler deploy"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

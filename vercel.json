@@ -1,0 +1,4 @@
+{
+  "outputDirectory": "public",
+  "rewrites": [{ "source": "/s/:id", "destination": "/api/share?id=:id" }]
+}

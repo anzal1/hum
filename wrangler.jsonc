@@ -1,0 +1,15 @@
+{
+  // `npx wrangler deploy` puts your own copy on <name>.<you>.workers.dev, free.
+  "name": "hum",
+  "main": "worker.js",
+  "compatibility_date": "2025-09-01",
+  "assets": { "directory": "./public", "binding": "ASSETS" },
+  // The official site: `npx wrangler deploy --env production`
+  "env": {
+    "production": {
+      "name": "hum",
+      "assets": { "directory": "./public", "binding": "ASSETS" },
+      "routes": [{ "pattern": "hum.anzalabidi.dev", "custom_domain": true }]
+    }
+  }
+}
