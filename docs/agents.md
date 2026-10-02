@@ -18,14 +18,22 @@ Optional settings, as environment variables: `HUM_PORT` (default 3737) and `HUM_
 
 ## Player in the chat
 
-Hosts that support [MCP Apps](https://github.com/modelcontextprotocol/ext-apps) show hum's real player as a card right inside the conversation: cover, synced lyric line, progress and previous, play, next. That is Claude (desktop and web), ChatGPT and VS Code. Ask for a song and the card appears under your message. No browser tab is opened and no local server is started.
+Hosts that support [MCP Apps](https://github.com/modelcontextprotocol/ext-apps) show a hum card right inside the conversation. Ask for a song and the card appears under your message. What the card does depends on the host:
 
-Browsers keep sound off until the page has been touched, and a chat card cannot ask for that permission. If the card says "Tap to start the music", tap it once. After that, asking your agent to skip, pause, change the volume or say what is playing all act on the card, and `now_playing` includes the lyric line being sung.
+| Host | What you get |
+| --- | --- |
+| ChatGPT, VS Code | The real player plays inside the chat: cover, synced lyric line, progress, previous, play, next. No browser tab is opened and no local server is started. |
+| Claude (desktop and web) | A live remote card in the chat: cover, glow in the cover's colours, title, synced lyric line, progress and buttons. The sound plays in a hum browser tab that opens by itself. Claude blocks embedded players in chat ([claude-ai-mcp#40](https://github.com/anthropics/claude-ai-mcp/issues/40)), and YouTube's player has to run in a real page. |
+| Claude Code, Cursor and other terminal or editor agents | Text replies. The music plays in a hum browser tab. |
+
+**In ChatGPT and VS Code.** Browsers keep sound off until the page has been touched, and a chat card cannot ask for that permission. If the card says "Tap to start the music", tap it once. After that, asking your agent to skip, pause, change the volume or say what is playing all act on the card, and `now_playing` includes the lyric line being sung.
+
+**In Claude.** The card notices within a moment that its host will not load the player, and turns into a remote instead. It asks the local hum server to open hum in your default browser (never when `HUM_NO_OPEN=1`) and plays there. Browsers keep sound off in a tab nobody has clicked, so if the card says "Click the hum tab once to start the sound", click that tab once. The card's buttons and your agent's `control`, `volume` and `now_playing` all act on that tab. "Open hum" in the card brings the tab back if you lost it. The card is drawn from the tool's own data and loads nothing from other sites, so it works under Claude's strict page rules.
 
 Good to know:
 
-- The card is hum's own widget, loaded from `https://hum.anzalabidi.dev` inside the chat. That is how YouTube gets a real page to play on, so the card needs internet access to that site. Point `HUM_CARD_ORIGIN` at your own copy (for example `http://localhost:3737` while running `node server.js`) to change it.
-- Only one card plays at a time. When you ask for something new, the older card pauses itself. Tap play on an older card to take the music back.
+- In ChatGPT and VS Code the card is hum's own widget, loaded from `https://hum.anzalabidi.dev` inside the chat. That is how YouTube gets a real page to play on, so the card needs internet access to that site. Point `HUM_CARD_ORIGIN` at your own copy (for example `http://localhost:3737` while running `node server.js`) to change it.
+- Only one thing plays at a time. When you ask for something new, the older card pauses itself (ChatGPT, VS Code) or simply shows what the tab is playing now (Claude). Tap play on an older player card to take the music back. A chat reopened later replays its old cards; they never start or change the music by themselves.
 - Hosts without MCP Apps (most terminal agents and editors) are unchanged: text replies, and the music plays in a hum browser tab.
 - `HUM_UI=0` turns the card off everywhere. `HUM_UI=1` turns it on for a host that supports MCP Apps but does not say so.
 
