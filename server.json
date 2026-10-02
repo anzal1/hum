@@ -22,7 +22,7 @@
     {
       "registryType": "mcpb",
       "identifier": "https://github.com/anzal1/hum/releases/download/v0.2.4/hum.mcpb",
-      "fileSha256": "49f6c9c6164a29fc8361203d9e342603d9c2c2aaabbbf61df3bb22e50766dd95",
+      "fileSha256": "9353e17f6bb6583dd3990a5cf91ac9a1848c556d83e6670dbdceb16c475f674d",
       "transport": {
         "type": "stdio"
       },
