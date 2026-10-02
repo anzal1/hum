@@ -40,7 +40,7 @@ const TOOLS = [
   },
   {
     name: 'now_playing',
-    description: 'What hum is playing right now, and what comes next.',
+    description: 'What hum is playing right now, the lyric line being sung, and what comes next.',
     inputSchema: { type: 'object', properties: {} },
   },
 ];
@@ -57,6 +57,7 @@ const getState = () => fetch(`${BASE}/api/remote/state`).then((r) => r.json());
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 function openBrowser(url) {
+  if (process.env.HUM_NO_OPEN) return;
   const [cmd, args] =
     process.platform === 'darwin' ? ['open', [url]] : process.platform === 'win32' ? ['cmd', ['/c', 'start', '', url]] : ['xdg-open', [url]];
   spawn(cmd, args, { stdio: 'ignore', detached: true }).unref();
@@ -83,8 +84,17 @@ function describe(s) {
   if (!s?.track) return 'Nothing is playing.';
   const t = s.track;
   const lines = [`${s.playing ? 'Playing' : 'Paused on'} “${t.title}” by ${t.artist}${t.album && t.album !== t.title ? ` from ${t.album}` : ''} (${fmt(s.position)} of ${fmt(s.duration)}, volume ${s.volume}%).`];
+  const line = liveLine(s);
+  if (line) lines.push(`Singing now: “${line}”`);
   if (s.upNext?.length) lines.push(`Up next: ${s.upNext.slice(0, 3).join('; ')}.`);
   return lines.join('\n');
+}
+// The lyric line being sung right now. The player reports position at time `at`, so move it forward.
+function liveLine(s) {
+  if (!s.lyrics?.length) return s.line || '';
+  const now = (s.position || 0) + (s.playing && s.at ? (Date.now() - s.at) / 1000 : 0) + 0.15;
+  const cur = s.lyrics.findLast((l) => l.t <= now);
+  return cur?.text?.trim() || '';
 }
 const fmt = (n) => `${Math.floor((n || 0) / 60)}:${String(Math.floor((n || 0) % 60)).padStart(2, '0')}`;
 

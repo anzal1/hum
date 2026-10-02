@@ -73,6 +73,7 @@ engine.addEventListener('queue', () => renderQueue());
 engine.addEventListener('modes', () => paintModes());
 engine.addEventListener('notice', ({ detail }) => toast(esc(detail)));
 engine.addEventListener('blocked', () => body.classList.add('needs-tap'));
+engine.lyricLines = () => lyrics.lines;
 connectRemote(engine);
 
 // Start loading YouTube the moment someone shows intent, not on page load.
@@ -152,7 +153,7 @@ function showTrack(t) {
     favicon.setTrack(t);
     lyrics.state('loading', '<span class="loader"></span>');
     const token = engine.token;
-    fetchLyrics(t).then((d) => token === engine.token && lyrics.set(d));
+    fetchLyrics(t).then((d) => token === engine.token && (lyrics.set(d), engine.emit('lyrics')));
   }
   if (t.art) {
     palette(sized(t.art, 120))

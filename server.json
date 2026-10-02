@@ -1,0 +1,38 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.anzal1/hum",
+  "title": "hum",
+  "description": "Free music for your coding agent. Play songs, mood stations and Spotify links in your browser.",
+  "repository": {
+    "url": "https://github.com/anzal1/hum",
+    "source": "github"
+  },
+  "websiteUrl": "https://hum.anzalabidi.dev",
+  "version": "0.1.0",
+  "icons": [
+    {
+      "src": "https://hum.anzalabidi.dev/icon-512.png",
+      "mimeType": "image/png",
+      "sizes": ["512x512"]
+    }
+  ],
+  "packages": [
+    {
+      "registryType": "mcpb",
+      "identifier": "https://github.com/anzal1/hum/releases/download/v0.1.0/hum.mcpb",
+      "fileSha256": "0000000000000000000000000000000000000000000000000000000000000000",
+      "transport": {
+        "type": "stdio"
+      },
+      "environmentVariables": [
+        {
+          "name": "HUM_PORT",
+          "description": "Port for the local hum server. Change it only if 3737 is taken.",
+          "isRequired": false,
+          "format": "number",
+          "default": "3737"
+        }
+      ]
+    }
+  ]
+}

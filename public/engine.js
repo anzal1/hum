@@ -261,22 +261,38 @@ export class Engine extends EventTarget {
       case 'next': this.next(); return 'Skipped';
       case 'prev':
       case 'previous': this.prev(); return 'Went back';
-      case 'volume': this.setVolume(Number(msg.value ?? msg.level) > 1 ? Number(msg.value ?? msg.level) / 100 : Number(msg.value ?? msg.level)); return `Volume ${Math.round(this.volume * 100)}%`;
+      // level is always a percentage; value is a 0 to 1 fraction (older callers sent 0 to 100)
+      case 'volume': this.setVolume(msg.level != null ? Number(msg.level) / 100 : Number(msg.value) > 1 ? Number(msg.value) / 100 : Number(msg.value)); return `Volume ${Math.round(this.volume * 100)}%`;
       case 'seek': this.seek(Number(msg.seconds) || 0); return 'Seeked';
+      // step the music down while something needs your attention, then bring it back
+      case 'duck':
+        if (this.preDuck == null) this.preDuck = this.volume;
+        this.setVolume(this.preDuck * (Number(msg.level ?? 30) / 100));
+        return `Ducked to ${Math.round(this.volume * 100)}%`;
+      case 'unduck':
+        if (this.preDuck != null) this.setVolume(this.preDuck);
+        this.preDuck = null;
+        return `Volume ${Math.round(this.volume * 100)}%`;
       default: throw new Error(`Unknown command ${c}`);
     }
   }
 
   snapshot() {
     const t = this.current;
+    const lines = (this.lyricLines?.() || []).map((l) => ({ t: l.t, text: l.text }));
     return {
       playing: this.playing,
       track: t ? { title: t.title, artist: t.artist, album: t.album || '', art: t.art || '', id: t.playId || t.id || '' } : null,
-      position: Math.round(this.time),
+      position: Math.round(this.time * 10) / 10,
       duration: Math.round(this.duration),
       volume: Math.round(this.volume * 100),
       upNext: this.list.slice(this.i + 1, this.i + 6).map((x) => `${x.title} · ${x.artist}`),
       context: this.ctx.name,
+      ducked: this.preDuck != null,
+      // synced lyrics, so a terminal can show the line being sung: position + (now - at)
+      line: lineAt(lines, this.time),
+      lyrics: lines,
+      at: Date.now(),
     };
   }
 
@@ -315,6 +331,12 @@ export class Engine extends EventTarget {
 
 // Local remote control: when served by `node server.js` (or the MCP server),
 // agents and scripts can drive whichever hum window was opened last.
+const lineAt = (lines, time) => {
+  let line = '';
+  for (const l of lines) if (l.t <= time + 0.15) line = l.text; else break;
+  return line;
+};
+
 export function connectRemote(engine) {
   if (!/^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname)) return;
   let es;
@@ -348,6 +370,6 @@ export function connectRemote(engine) {
     clearTimeout(pending);
     pending = setTimeout(() => post('state', engine.snapshot()), 250);
   };
-  ['track', 'playing', 'queue', 'modes'].forEach((t) => engine.addEventListener(t, report));
-  setInterval(report, 10000);
+  ['track', 'playing', 'queue', 'modes', 'lyrics'].forEach((t) => engine.addEventListener(t, report));
+  setInterval(report, 5000);
 }

@@ -50,21 +50,60 @@ One script tag adds a floating player to any page:
 
 Then drive it from code: `hum.play('Blinding Lights')`, `hum.station('deep focus')`, `hum.playlist(spotifyUrl)`, `hum.pause()`, `hum.next()`, `hum.volume(60)`, `hum.on('state', fn)`. Or use the iframe directly: `widget.html?station=lofi` and `postMessage({ hum: 'play', query })`. Live demo at `/developers.html`.
 
-## Let coding agents play music
+## In your coding agent
 
-`mcp.js` is a zero-dependency MCP server. It starts the local hum server if needed, opens hum in your browser, and gives the agent `play`, `station`, `play_playlist`, `control`, `volume` and `now_playing`.
+hum works with any agent that speaks MCP. Your agent is the remote, and the music plays in a hum browser tab. It can play, start a station, import a Spotify link, skip, set the volume, and tell you what is playing, down to the line being sung. Needs Node 18+.
 
 ```bash
-claude mcp add hum -- npx -y -p github:anzal1/hum hum-mcp
+claude mcp add --scope user hum -- npx -y -p github:anzal1/hum hum-mcp
 ```
 
-Any other harness can POST to the local server instead:
+VS Code:
+
+```bash
+code --add-mcp '{"name":"hum","type":"stdio","command":"npx","args":["-y","-p","github:anzal1/hum","hum-mcp"]}'
+```
+
+Claude Desktop (one-click extension), Cursor (install link), Codex, Gemini CLI, Windsurf, Zed, Copilot CLI, opencode, Cline, Kiro, Amp, Goose and Continue are all in [docs/agents.md](docs/agents.md).
+
+## From your terminal
+
+Install once, and the commands start hum and open it for you when needed.
+
+```bash
+npm i -g github:anzal1/hum
+
+hum play blinding lights       # a song or artist
+hum station lofi beats         # an endless mix
+hum playlist <spotify link>
+hum pause | resume | toggle | next | prev
+hum vol 40
+hum duck                       # lower the music; hum unduck brings it back
+hum now                        # title, artist, progress and the line being sung
+```
+
+`hum now --line` prints one short line for status bars, and nothing when hum is not running: `♪ Amazing Grace · Judy Collins · I once was lost, but now I am found`. It never starts hum and returns in about 30 ms. `hum now --json` is for scripts.
+
+In tmux (`~/.tmux.conf`):
+
+```
+set -g status-right '#(hum now --line)'
+set -g status-interval 2
+```
+
+In Claude Code (`~/.claude/settings.json`):
+
+```json
+"statusLine": { "type": "command", "command": "hum now --line" }
+```
+
+Anything else can POST to the local remote, which only listens on 127.0.0.1 and only accepts JSON:
 
 ```bash
 curl -X POST localhost:3737/api/remote -H 'content-type: application/json' -d '{"cmd":"station","mood":"lofi"}'
 ```
 
-The remote only listens on 127.0.0.1 and only accepts JSON, so other websites cannot control it.
+Playback always happens in the hum window, through YouTube's own player, so keep it open. The terminal is a remote and a display. `HUM_PORT` picks another port and `HUM_NO_OPEN=1` stops it opening the browser.
 
 ## How it works
 

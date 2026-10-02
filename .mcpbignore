@@ -1,0 +1,17 @@
+# Files that the .mcpb bundle does not need. The bundle keeps mcp.js, server.js,
+# api/, public/, bin/, package.json, manifest.json and LICENSE.
+desktop/
+test/
+og/
+docs/
+scripts/
+node_modules/
+dist/
+.wrangler/
+.dockerignore
+Dockerfile
+wrangler.jsonc
+worker.js
+vercel.json
+server.json
+README.md

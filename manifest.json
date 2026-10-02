@@ -1,0 +1,80 @@
+{
+  "manifest_version": "0.3",
+  "name": "hum",
+  "display_name": "hum",
+  "version": "0.1.0",
+  "description": "Play any song for free while you work. Ask Claude for a song or a mood and it plays in a hum browser tab.",
+  "long_description": "hum is a free music player that plays through YouTube's official embed. This extension lets Claude be the remote: ask for a song, an endless mood station, or a Spotify playlist link, then pause, skip, change the volume, or ask what is playing and which lyric line is being sung. The first time you ask for music, hum starts a small server on your machine and opens itself in your browser. Music plays in that browser tab, so click the tab once to let the browser allow sound. Nothing is sent anywhere except the searches hum makes to YouTube Music and Spotify's public embed page.",
+  "author": {
+    "name": "Anzal",
+    "url": "https://github.com/anzal1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/anzal1/hum.git"
+  },
+  "homepage": "https://hum.anzalabidi.dev",
+  "documentation": "https://github.com/anzal1/hum/blob/main/docs/agents.md",
+  "support": "https://github.com/anzal1/hum/issues",
+  "icon": "public/icon-512.png",
+  "server": {
+    "type": "node",
+    "entry_point": "mcp.js",
+    "mcp_config": {
+      "command": "node",
+      "args": ["${__dirname}/mcp.js"],
+      "env": {
+        "HUM_PORT": "${user_config.port}"
+      }
+    }
+  },
+  "tools": [
+    {
+      "name": "play",
+      "description": "Play a song by title, artist, or both. Music keeps going afterwards with similar songs."
+    },
+    {
+      "name": "station",
+      "description": "Start an endless mix in a mood, genre, artist, or around a seed song."
+    },
+    {
+      "name": "play_playlist",
+      "description": "Play a public Spotify playlist, album, or track link."
+    },
+    {
+      "name": "control",
+      "description": "Pause, resume, skip to the next song, or go back to the previous one."
+    },
+    {
+      "name": "volume",
+      "description": "Set the volume from 0 to 100."
+    },
+    {
+      "name": "now_playing",
+      "description": "What is playing right now, the lyric line being sung, and what comes next."
+    }
+  ],
+  "keywords": ["music", "player", "youtube", "lyrics", "focus", "lofi"],
+  "license": "MIT",
+  "privacy_policies": [
+    "https://policies.google.com/privacy",
+    "https://www.spotify.com/legal/privacy-policy/"
+  ],
+  "compatibility": {
+    "platforms": ["darwin", "win32", "linux"],
+    "runtimes": {
+      "node": ">=18.0.0"
+    }
+  },
+  "user_config": {
+    "port": {
+      "type": "number",
+      "title": "Local port",
+      "description": "Port hum uses on your machine. Change it only if 3737 is already taken.",
+      "default": 3737,
+      "min": 1024,
+      "max": 65535,
+      "required": false
+    }
+  }
+}
