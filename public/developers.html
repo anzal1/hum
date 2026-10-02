@@ -27,7 +27,7 @@
     .try button { height: 40px; padding: 0 16px; border-radius: 999px; border: 1px solid var(--line); background: var(--panel); color: var(--text); font: 500 14px 'Geist', sans-serif; cursor: pointer; transition: all 0.2s; }
     .try button:hover { background: #fff; color: #0b0a0f; }
     #state { margin-top: 14px; font: 13px 'Geist Mono', monospace; color: var(--muted); min-height: 22px; }
-    .ways { display: grid; gap: 12px; margin-top: 20px; }
+    .ways { display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; margin-top: 20px; }
     .way { padding: 20px 22px; border-radius: 18px; background: var(--panel); border: 1px solid var(--line); }
     .way h3 { font: 600 16px 'Geist', sans-serif; display: flex; align-items: center; gap: 10px; }
     .way h3 span { font: 500 11px 'Geist Mono', monospace; letter-spacing: 0.06em; text-transform: uppercase; color: var(--accent); padding: 3px 8px; border-radius: 6px; background: rgb(255 196 150 / 0.1); }
@@ -42,6 +42,17 @@
     nav.toc { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 22px; }
     nav.toc a { font-size: 14px; padding: 6px 12px; border-radius: 999px; border: 1px solid var(--line); color: var(--muted); text-decoration: none; }
     nav.toc a:hover { color: var(--text); border-color: rgb(255 255 255 / 0.25); }
+    .btn.ag { border: 1px solid var(--line); background: var(--panel); color: var(--text); transition: transform 0.2s, background 0.2s, color 0.2s; }
+    .btn.ag:hover { background: #fff; color: #0b0a0f; }
+    .btn:focus-visible, .copyrow button:focus-visible, .sub a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+    .installs { margin-top: 18px; }
+    .sub { margin-top: 10px; font-size: 14px; color: var(--muted); max-width: 600px; }
+    .lbl { margin: 26px 0 -6px; font: 500 11px 'Geist Mono', monospace; letter-spacing: 0.06em; text-transform: uppercase; color: var(--accent); }
+    .copyrow { display: flex; align-items: flex-start; gap: 8px; margin: 16px 0; }
+    .copyrow pre { flex: 1; min-width: 0; margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; }
+    .copyrow button { flex: none; height: 40px; min-width: 72px; padding: 0 14px; border-radius: 999px; border: 1px solid var(--line); background: var(--panel); color: var(--text); font: 500 13px 'Geist', sans-serif; cursor: pointer; transition: background 0.2s, color 0.2s; }
+    .copyrow button:hover { background: #fff; color: #0b0a0f; }
+    @media (max-width: 520px) { .copyrow { flex-direction: column; align-items: stretch; gap: 8px; } .copyrow button { align-self: flex-end; } }
   </style>
 </head>
 <body>
@@ -109,13 +120,35 @@ hum.<span class="k">on</span>(<span class="s">'state'</span>, s =&gt; console.lo
     <p>Talk to it with <code>postMessage({ hum: 'play', query: '…' })</code>. It reports back with <code>{ hum: 'state', … }</code> messages.</p>
 
     <h2 id="agents">For coding agents</h2>
-    <p>Run hum locally and agents get tools like <code>play</code>, <code>station</code>, <code>control</code> and <code>now_playing</code> over MCP. Ask your agent to put on something to focus to.</p>
-    <pre><span class="c"># Claude Code</span>
-claude mcp add hum -- npx -y -p <span class="repo-npx"></span> hum-mcp
+    <p>Your agent is the remote. It can play a song, start a station, skip and set the volume, and the music plays in a hum tab through YouTube's own player. Needs Node 18 or newer, except for the Claude Desktop extension, which brings its own.</p>
 
-<span class="c"># any MCP client</span>
-{ <span class="s">"command"</span>: <span class="s">"npx"</span>, <span class="s">"args"</span>: [<span class="s">"-y"</span>, <span class="s">"-p"</span>, <span class="s">"<span class="repo-npx"></span>"</span>, <span class="s">"hum-mcp"</span>] }</pre>
-    <p>No MCP? The local server speaks plain HTTP too:</p>
+    <div class="deploy installs">
+      <a class="btn ag" id="add-cursor" href="cursor://anysphere.cursor-deeplink/mcp/install?name=hum&amp;config=eyJjb21tYW5kIjoibnB4IiwiYXJncyI6WyIteSIsIi1wIiwiZ2l0aHViOmFuemFsMS9odW0iLCJodW0tbWNwIl19">Add to Cursor</a>
+      <a class="btn ag" id="add-vscode" href="vscode:mcp/install?%7B%22name%22%3A%22hum%22%2C%22type%22%3A%22stdio%22%2C%22command%22%3A%22npx%22%2C%22args%22%3A%5B%22-y%22%2C%22-p%22%2C%22github%3Aanzal1%2Fhum%22%2C%22hum-mcp%22%5D%7D">Install in VS Code</a>
+      <a class="btn ag" id="add-mcpb" href="https://github.com/anzal1/hum/releases/latest/download/hum.mcpb" download>Claude Desktop extension</a>
+    </div>
+    <p class="sub">For the Claude Desktop extension, double-click the downloaded <code>hum.mcpb</code> file to install it. On VS Code Insiders, <a id="add-vscode-insiders" href="vscode-insiders:mcp/install?%7B%22name%22%3A%22hum%22%2C%22type%22%3A%22stdio%22%2C%22command%22%3A%22npx%22%2C%22args%22%3A%5B%22-y%22%2C%22-p%22%2C%22github%3Aanzal1%2Fhum%22%2C%22hum-mcp%22%5D%7D">use this link</a>.</p>
+
+    <div class="lbl">Claude Code</div>
+    <div class="copyrow">
+      <pre>claude mcp add --scope user hum -- npx -y -p github:anzal1/hum hum-mcp</pre>
+      <button type="button" data-copy="claude mcp add --scope user hum -- npx -y -p github:anzal1/hum hum-mcp" aria-label="Copy the Claude Code command">Copy</button>
+    </div>
+
+    <div class="lbl">From your terminal</div>
+    <div class="copyrow">
+      <pre><span class="c"># install once</span>
+npm i -g github:anzal1/hum
+<span class="c"># play something</span>
+hum play lofi beats
+<span class="c"># one line for status bars</span>
+hum now --line</pre>
+      <button type="button" data-copy="npm i -g github:anzal1/hum&#10;hum play lofi beats&#10;hum now --line" aria-label="Copy the terminal commands">Copy</button>
+    </div>
+
+    <p><a id="all-agents" href="https://github.com/anzal1/hum/blob/main/docs/agents.md">Every other agent (Codex, Gemini CLI, Windsurf, Zed, Copilot CLI and more)</a></p>
+
+    <p style="margin-top:22px">No MCP? The local server speaks plain HTTP too:</p>
     <pre>curl -X POST localhost:3737/api/remote \
   -H 'content-type: application/json' -d '{"cmd":"station","mood":"lofi"}'</pre>
   </main>
@@ -127,6 +160,11 @@ claude mcp add hum -- npx -y -p <span class="repo-npx"></span> hum-mcp
     document.querySelectorAll('.repo-npx').forEach((el) => (el.textContent = REPO.replace('https://github.com/', 'github:')));
     document.querySelector('[data-deploy="cloudflare"]').href = `https://deploy.workers.cloudflare.com/?url=${REPO}`;
     document.querySelector('[data-deploy="vercel"]').href = `https://vercel.com/new/clone?repository-url=${encodeURIComponent(REPO)}`;
+    document.querySelectorAll('.copyrow button').forEach((b) => b.addEventListener('click', async () => {
+      try { await navigator.clipboard.writeText(b.dataset.copy); b.textContent = 'Copied'; }
+      catch { b.textContent = 'Press Ctrl+C'; const r = document.createRange(); r.selectNodeContents(b.previousElementSibling); const sel = getSelection(); sel.removeAllRanges(); sel.addRange(r); }
+      setTimeout(() => (b.textContent = 'Copy'), 1600);
+    }));
   </script>
   <script src="embed.js" data-target="#demo-player"></script>
   <script>hum.on('state', (s) => (document.getElementById('state').textContent = s.track ? `${s.playing ? '▶' : '❚❚'} ${s.track.title} · ${s.track.artist}` : ''));</script>
