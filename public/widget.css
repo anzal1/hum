@@ -108,3 +108,22 @@ body.pip .w-controls { margin-top: auto; padding-bottom: 6px; }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
 }
+
+/* ?card=1: the compact card shown inside a chat. No search, no moods; the player stays at least 200px. */
+body.card .w-bottom, body.card .w-results, body.card .w-hide, body.card .w-meta .w-open { display: none; }
+body.card .w { gap: 8px; padding: 14px 16px 16px; }
+body.card .w-screen { flex: 1 1 200px; min-height: 200px; aspect-ratio: auto; }
+body.card .w-title { font-size: 23px; }
+body.card .w-line { display: block; min-height: 22px; font-size: 17px; }
+body.card .w-controls { gap: 14px; }
+@media (min-width: 640px) {
+  body.card .w { display: grid; grid-template-columns: clamp(356px, 56%, 391px) 1fr; grid-template-rows: 1fr auto auto auto auto 1fr; column-gap: 22px; row-gap: 8px; padding: 20px 22px; }
+  body.card .w-screen { grid-column: 1; grid-row: 1 / -1; flex: none; min-height: 200px; aspect-ratio: 16 / 9; align-self: center; }
+  body.card .w-meta, body.card .w-line, body.card .w-progress, body.card .w-controls { grid-column: 2; min-width: 0; }
+  body.card .w-meta { grid-row: 2; }
+  body.card .w-title { font-size: 26px; line-height: 1.1; white-space: normal; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
+  body.card .w-line { grid-row: 3; min-height: 44px; font-size: 18px; line-height: 1.25; white-space: normal; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
+  body.card .w-progress { grid-row: 4; }
+  body.card .w-controls { grid-row: 5; justify-content: flex-start; }
+  body.card .w-tap { top: 50%; left: calc(22px + clamp(356px, 0.56 * (100vw - 44px), 391px) / 2); }
+}

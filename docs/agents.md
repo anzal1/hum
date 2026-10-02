@@ -14,7 +14,20 @@ The first run downloads hum from GitHub, which takes a few seconds. If your agen
 npm install -g github:anzal1/hum    # then the command is just: hum-mcp
 ```
 
-Optional settings, as environment variables: `HUM_PORT` (default 3737) and `HUM_NO_OPEN=1` (never open the browser by itself).
+Optional settings, as environment variables: `HUM_PORT` (default 3737) and `HUM_NO_OPEN=1` (never open the browser by itself). The player card below adds `HUM_UI` and `HUM_CARD_ORIGIN`.
+
+## Player in the chat
+
+Hosts that support [MCP Apps](https://github.com/modelcontextprotocol/ext-apps) show hum's real player as a card right inside the conversation: cover, synced lyric line, progress and previous, play, next. That is Claude (desktop and web), ChatGPT and VS Code. Ask for a song and the card appears under your message. No browser tab is opened and no local server is started.
+
+Browsers keep sound off until the page has been touched, and a chat card cannot ask for that permission. If the card says "Tap to start the music", tap it once. After that, asking your agent to skip, pause, change the volume or say what is playing all act on the card, and `now_playing` includes the lyric line being sung.
+
+Good to know:
+
+- The card is hum's own widget, loaded from `https://hum.anzalabidi.dev` inside the chat. That is how YouTube gets a real page to play on, so the card needs internet access to that site. Point `HUM_CARD_ORIGIN` at your own copy (for example `http://localhost:3737` while running `node server.js`) to change it.
+- Only one card plays at a time. When you ask for something new, the older card pauses itself. Tap play on an older card to take the music back.
+- Hosts without MCP Apps (most terminal agents and editors) are unchanged: text replies, and the music plays in a hum browser tab.
+- `HUM_UI=0` turns the card off everywhere. `HUM_UI=1` turns it on for a host that supports MCP Apps but does not say so.
 
 On Windows, if an app cannot find `npx`, use `"command": "cmd"` and put `"/c", "npx"` at the start of `args`.
 

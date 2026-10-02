@@ -12,6 +12,14 @@ const engine = new Engine($('#yt'));
 const aurora = new Aurora($('#aurora'));
 const params = new URLSearchParams(location.search);
 const host = window.parent !== window ? window.parent : null;
+// ?card=1 is the compact card the MCP server shows inside a chat (see mcp.js).
+const card = params.get('card') === '1';
+if (card) {
+  body.classList.add('card');
+  $('.w-idle p').textContent = 'Warming up the music';
+  $('.w-title').textContent = 'hum';
+  $('.w-artist').textContent = 'Ready when you are';
+}
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
 
 const MOODS = [
@@ -42,6 +50,7 @@ document.addEventListener(
 
 let lines = [];
 let lineIdx = -1;
+if (card) engine.lyricLines = () => lines; // the chat reads the sung line from snapshots
 engine.addEventListener('track', ({ detail: t }) => {
   body.classList.add('has-track');
   $('.w-title').textContent = t.title;
@@ -226,7 +235,7 @@ addEventListener('message', async (e) => {
   host.postMessage({ hum: 'reply', id: msg.id, ...reply }, '*');
 });
 
-connectRemote(engine);
+if (!card) connectRemote(engine);
 window.requestIdleCallback ? requestIdleCallback(() => engine.warm(), { timeout: 1500 }) : setTimeout(() => engine.warm(), 1500);
 
 // Start from URL params: ?station=lofi, ?q=song, ?playlist=<spotify link>, &autoplay=1

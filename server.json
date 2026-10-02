@@ -8,7 +8,7 @@
     "source": "github"
   },
   "websiteUrl": "https://hum.anzalabidi.dev",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "icons": [
     {
       "src": "https://hum.anzalabidi.dev/icon-512.png",
@@ -19,7 +19,7 @@
   "packages": [
     {
       "registryType": "mcpb",
-      "identifier": "https://github.com/anzal1/hum/releases/download/v0.1.0/hum.mcpb",
+      "identifier": "https://github.com/anzal1/hum/releases/download/v0.2.0/hum.mcpb",
       "fileSha256": "94ac95ba78e59fed16ab387ead0f70ed7fcfb9f4e1bd6adceebb854143ff35a4",
       "transport": {
         "type": "stdio"
