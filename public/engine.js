@@ -56,6 +56,16 @@ export function sized(url, px) {
   return url;
 }
 
+// Fisher-Yates: every order equally likely.
+function shuffled(items) {
+  const a = [...items];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
 export class Engine extends EventTarget {
   constructor(playerEl, { onResolve } = {}) {
     super();
@@ -100,7 +110,8 @@ export class Engine extends EventTarget {
     this.i = i;
     this.ctx = ctx;
     this.radioFor = null;
-    if (this.shuffle && !opts.keepOrder) this.shuffleUpcoming();
+    // Shuffle keeps the song that starts and mixes the rest, however playback began.
+    if (this.shuffle) this.shuffleUpcoming();
     await this.start(opts);
   }
 
@@ -191,12 +202,7 @@ export class Engine extends EventTarget {
     this.emit('modes');
   }
   shuffleUpcoming() {
-    const rest = this.list.slice(this.i + 1);
-    for (let i = rest.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [rest[i], rest[j]] = [rest[j], rest[i]];
-    }
-    this.list = [...this.list.slice(0, this.i + 1), ...rest];
+    this.list = [...this.list.slice(0, this.i + 1), ...shuffled(this.list.slice(this.i + 1))];
   }
 
   async topUpRadio() {
@@ -206,7 +212,8 @@ export class Engine extends EventTarget {
     try {
       const mix = await api('radio', { id: t.id });
       const have = new Set([...this.list.map(keyOf), ...this.list.map(nameKey)]);
-      this.list.push(...mix.filter((x) => !have.has(keyOf(x)) && !have.has(nameKey(x))).map((x) => ({ ...x, radio: true })));
+      const more = mix.filter((x) => !have.has(keyOf(x)) && !have.has(nameKey(x))).map((x) => ({ ...x, radio: true }));
+      this.list.push(...(this.shuffle ? shuffled(more) : more));
       this.emit('queue');
     } catch {}
   }
@@ -223,7 +230,9 @@ export class Engine extends EventTarget {
     const [hit] = await api('search', { q: seed, limit: 1 });
     if (!hit) throw new Error(`Nothing found for “${seed}”`);
     const mix = await api('radio', { id: hit.id });
-    const list = [{ ...hit }, ...mix.filter((x) => x.id !== hit.id).map((x) => ({ ...x, radio: true }))];
+    // A station should sound different each time: its mix comes back in a fixed order, so it
+    // is shuffled behind the opening song even with shuffle off.
+    const list = [{ ...hit }, ...shuffled(mix.filter((x) => x.id !== hit.id).map((x) => ({ ...x, radio: true })))];
     await this.playList(list, 0, { name: name || seed, href: '#/' }, { keepOrder: true, ...opts });
     return hit;
   }
