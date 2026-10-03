@@ -888,7 +888,12 @@ function route() {
   const [, kind, arg = ''] = h.match(/^\/(\w*)\/?(.*)$/) || [];
   // Playlist and station pages can end in ?for-you
   const { id: param, foryou } = kind === 'pl' || kind === 'station' ? viewArg(arg) : { id: decodeURIComponent(arg), foryou: false };
+  const wasHome = body.classList.contains('home');
   body.classList.toggle('home', !kind || kind === 's');
+  // The slim bar belongs to a scrolled home page. Arriving or leaving, it waits for the hero to
+  // settle (transitionend below); a home page drawn again in place is judged on the next frame.
+  if (wasHome !== body.classList.contains('home')) body.classList.remove('scrolled');
+  else requestAnimationFrame(checkScrolled);
   body.classList.toggle('searching', kind === 'search');
   if (kind !== 'search' && document.activeElement !== input) input.value = '';
   const paint = () => {
@@ -968,11 +973,14 @@ function playResult(i) {
 let scrollFrame = 0;
 const checkScrolled = () => {
   scrollFrame = 0;
+  if (!body.classList.contains('home')) return body.classList.remove('scrolled');
   const notchRoom = body.classList.contains('notch') && body.classList.contains('has-track') ? 50 : 0;
   body.classList.toggle('scrolled', $('.search').getBoundingClientRect().top < notchRoom + 64);
 };
 addEventListener('scroll', () => scrollFrame || (scrollFrame = requestAnimationFrame(checkScrolled)), { passive: true });
 addEventListener('resize', checkScrolled);
+// The hero opens and closes with a transition, so its search only has a real position once that ends.
+$('.hero')?.addEventListener('transitionend', (e) => e.propertyName === 'max-height' && checkScrolled());
 checkScrolled();
 
 // ---------- interactions ----------
