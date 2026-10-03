@@ -71,8 +71,10 @@ export async function search(q, limit = 20) {
 }
 
 // The "Mix" YouTube Music builds for any song. The first item is the seed itself.
-export async function radio(id) {
-  const data = await ytm('next', { videoId: id, playlistId: `RDAMVM${id}`, isAudioOnly: true });
+// Google answers the `next` call with a 403 captcha page for Cloudflare's network
+// (search and player are fine), so when it fails we rebuild the same list from
+// `music/get_queue`, which returns the same renderers and is not blocked there.
+function mixTracks(data, limit = 50) {
   const out = [];
   const seen = new Set();
   for (const it of find(data, 'playlistPanelVideoRenderer')) {
@@ -83,8 +85,26 @@ export async function radio(id) {
     if (seen.has(key)) continue;
     seen.add(key);
     out.push(track);
+    if (out.length >= limit) break;
   }
   return out;
+}
+
+export async function radio(id) {
+  try {
+    return mixTracks(await ytm('next', { videoId: id, playlistId: `RDAMVM${id}`, isAudioOnly: true }));
+  } catch (err) {
+    // The queue for the mix leaves the seed out, so fetch it alongside.
+    const [mix, seed] = await Promise.all([
+      ytm('music/get_queue', { playlistId: `RDAMVM${id}` }),
+      ytm('music/get_queue', { videoIds: [id] }),
+    ]).catch(() => {
+      throw err;
+    });
+    const out = mixTracks({ seed, mix });
+    if (!out.length) throw err;
+    return out;
+  }
 }
 
 // Plain YouTube results, used when a song's main upload refuses to play embedded.
