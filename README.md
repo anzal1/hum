@@ -132,13 +132,19 @@ In the browser, press `N` for the same island inside the page.
 
 Press `P` or the pop-out button and the player moves into a small always-on-top window (Chrome and Edge, via Document Picture-in-Picture). Chrome can also open it by itself when you switch tabs mid-song. Close it and playback slides back into the page at the same second.
 
+## For you
+
+Every playlist you bring over and every station has an Original / For you switch. For you keeps the same songs but ranks them by what you finish, skip and like, and weaves in a few finds from outside the playlist, tagged "new for you". It opens with 3 finds, adds up to 3 on each new day you open it, and never goes past 30% of the list. A find you skip twice is retired for good. Once you have played a handful of songs, the home page adds a "Made for you" row with the variants of what you play most.
+
+Everything is computed in the browser from your own listening and stored in `localStorage` under the keys `taste` and `variants`. Your taste data stays on your device; the only requests are the ordinary radio lookups for a few of your songs that find new ones. The rules live in `public/taste.js`.
+
 ## Share links
 
 Song links look like `/s/<id>`. Chat apps and social sites see the song's own cover and title; people who click land straight in the player. The default preview image is `public/og.jpg`, made from `og/og.html`. Set the `og:image` in `public/index.html` to your full domain after deploying, since some crawlers ignore relative paths.
 
 ## Tests
 
-`test/e2e.js` is an end-to-end suite of 52 checks covering every search path, button, slider, switch, list action, keyboard shortcut, the widget, share pages and the remote. It passes in Chromium, Firefox and WebKit (Safari's engine). Serve it next to the app (`cp test/e2e.js public/__e2e.js`), start the app, press play once, then run in the console:
+`test/e2e.js` is an end-to-end suite of 87 checks covering every search path, button, slider, switch, list action, keyboard shortcut, the widget, share pages, the remote and the For you taste rules. The suite passes in Chromium; the first 52 checks also passed in Firefox and WebKit (Safari's engine) when they were written. Serve it next to the app (`cp test/e2e.js public/__e2e.js`), start the app, press play once, then run in the console:
 
 ```js
 (await import('/__e2e.js')).run().then((r) => console.table(r))
