@@ -38,7 +38,7 @@ export async function api(path, params, { cache = path !== 'import' } = {}) {
 const API_BASE = new URL('.', import.meta.url).href.replace(/\/$/, '');
 
 export const keyOf = (t) => t.id || `${t.title}|${t.artist}`.toLowerCase();
-const nameKey = (t) => `${t.title}|${t.artist}`.toLowerCase();
+export const nameKey = (t) => `${t.title}|${t.artist}`.toLowerCase();
 export const fmt = (s) => {
   s = Math.max(0, Math.floor(s || 0));
   const h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60), r = String(s % 60).padStart(2, '0');
@@ -57,7 +57,7 @@ export function sized(url, px) {
 }
 
 // Fisher-Yates: every order equally likely.
-function shuffled(items) {
+export function shuffled(items) {
   const a = [...items];
   for (let i = a.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
@@ -82,6 +82,8 @@ export class Engine extends EventTarget {
     this.playing = false;
     this.token = 0;
     this.radioFor = null;
+    // Why the song on screen is about to be left: switch (default), skip, or error. Listeners read it on 'track'.
+    this.exit = 'switch';
     this.player.addEventListener('state', ({ detail }) => this.onState(detail));
     this.player.addEventListener('error', () => this.onError());
   }
@@ -110,6 +112,7 @@ export class Engine extends EventTarget {
     this.i = i;
     this.ctx = ctx;
     this.radioFor = null;
+    this.exit = 'switch';
     // Shuffle keeps the song that starts and mixes the rest, however playback began.
     if (this.shuffle) this.shuffleUpcoming();
     await this.start(opts);
@@ -122,12 +125,13 @@ export class Engine extends EventTarget {
     t.tried = [];
     t.alts = null;
     this.emit('track', t);
+    this.exit = 'switch';
     try {
       await this.resolve(t);
     } catch {
       if (token !== this.token) return;
       this.notice(`Could not find “${t.title}”. Skipping.`);
-      return this.next();
+      return this.next(false, 'error');
     }
     if (token !== this.token) return;
     this.emit('track', t);
@@ -148,11 +152,12 @@ export class Engine extends EventTarget {
     }, 3500);
   }
 
-  next(auto = false) {
+  next(auto = false, exit = auto ? 'end' : 'skip') {
     if (auto && this.repeat === 'one') return this.player.seek(0), this.player.play();
     if (this.i < this.list.length - 1) this.i++;
     else if (this.repeat === 'all' && this.list.length) this.i = 0;
     else return auto ? null : this.notice('That was the last song in the queue');
+    this.exit = exit;
     this.start();
   }
   prev() {
@@ -167,6 +172,7 @@ export class Engine extends EventTarget {
   jump(i) {
     if (i === this.i || !this.list[i]) return;
     this.i = i;
+    this.exit = 'skip';
     this.start();
   }
   remove(i) {
@@ -233,7 +239,7 @@ export class Engine extends EventTarget {
     // A station should sound different each time: its mix comes back in a fixed order, so it
     // is shuffled behind the opening song even with shuffle off.
     const list = [{ ...hit }, ...shuffled(mix.filter((x) => x.id !== hit.id).map((x) => ({ ...x, radio: true })))];
-    await this.playList(list, 0, { name: name || seed, href: '#/' }, { keepOrder: true, ...opts });
+    await this.playList(list, 0, { name: name || seed, href: '#/', key: seed }, { keepOrder: true, ...opts });
     return hit;
   }
   async playYouTube(id, opts = {}) {
@@ -309,7 +315,10 @@ export class Engine extends EventTarget {
 
   onState(s) {
     if (s === 1 && this.current?.tried?.length) this.current.playId = this.current.tried.at(-1);
-    if (s === 0) this.next(true);
+    if (s === 0) {
+      this.emit('ended', this.current);
+      this.next(true);
+    }
     const on = s === 1 || (s === 3 && this.playing);
     if (on !== this.playing) {
       this.playing = on;
@@ -334,7 +343,7 @@ export class Engine extends EventTarget {
       return this.player.load(alt);
     }
     this.notice(`“${t.title}” is not allowed to play here. Skipping.`);
-    this.next();
+    this.next(false, 'error');
   }
 }
 

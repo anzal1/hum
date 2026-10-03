@@ -5,6 +5,7 @@ import { fetchLyrics, LyricsView, escapeHtml as esc } from './lyrics.js';
 import { icon } from './icons.js';
 import { genArt, likedArt, stationArt, paintArt, initArtMotion, Favicon } from './art.js';
 import { initImages, initTilt, initPeek } from './fx.js';
+import { attachListener, loadTaste, loadVariants, saveVariants, composeVariant, growFinds, hasSignal, topContexts, dayKey, clock, likedKeySet } from './taste.js';
 
 const $ = (s, el = document) => el.querySelector(s);
 const $$ = (s, el = document) => [...el.querySelectorAll(s)];
@@ -75,6 +76,7 @@ engine.addEventListener('notice', ({ detail }) => toast(esc(detail)));
 engine.addEventListener('blocked', () => body.classList.add('needs-tap'));
 engine.lyricLines = () => lyrics.lines;
 connectRemote(engine);
+attachListener(engine);
 
 // Start loading YouTube the moment someone shows intent, not on page load.
 const warm = () => engine.warm();
@@ -448,16 +450,20 @@ function renderHome() {
       <div class="stations">
         ${STATIONS.map(
           (s, i) => `
-          <button class="station" data-station="${i}" style="--c1:${s.c[0]};--c2:${s.c[1]};--c3:${s.c[2]};--i:${i}">
-            ${stationArt(s.name, s.c)}
-            <span class="shine"></span>
-            <span class="station-name">${s.name}</span>
-            <span class="station-note">${s.note}</span>
-            <span class="station-play">${icon('play')}</span>
-          </button>`,
+          <div class="station-cell">
+            <button class="station" data-station="${i}" style="--c1:${s.c[0]};--c2:${s.c[1]};--c3:${s.c[2]};--i:${i}">
+              ${stationArt(s.name, s.c)}
+              <span class="shine"></span>
+              <span class="station-name">${s.name}</span>
+              <span class="station-note">${s.note}</span>
+              <span class="station-play">${icon('play')}</span>
+            </button>
+            <a class="station-fy" style="--i:${i}" href="#/station/${i}?for-you" aria-label="${esc(s.name)}, made for you">${icon('spark', 'tiny')} For you</a>
+          </div>`,
         ).join('')}
       </div>
     </section>
+    ${madeForYou()}
     ${
       recent.length
         ? `<section class="shelf">
@@ -568,7 +574,7 @@ const row = (t, i, n) => `
   <div class="row" data-play="${i}" data-key="${esc(keyOf(t))}" style="--i:${Math.min(i, 12)}">
     ${n ? `<span class="n">${n}</span>` : ''}
     <span class="row-art">${t.art ? `<img src="${esc(sized(t.art, 96))}"${fb(t)} alt="" loading="lazy" decoding="async">` : '<span class="shimmer"></span>'}<span class="row-play">${icon('play')}</span>${eq()}</span>
-    <span class="row-text"><b>${esc(t.title)}</b><span>${esc(t.artist)}</span></span>
+    <span class="row-text"><b>${esc(t.title)}</b><span>${t.find ? '<i class="find-tag">new for you</i>' : ''}${esc(t.artist)}</span></span>
     <span class="row-album">${esc(t.album || '')}</span>
     <button class="icon-btn small" data-like-key="${esc(keyOf(t))}" data-row-like="${i}" aria-label="Like">${icon('heart')}</button>
     <button class="icon-btn small" data-row-queue="${i}" aria-label="Play next">${icon('plus')}</button>
@@ -627,28 +633,205 @@ function playlistById(id) {
   return lib.playlists.find((p) => p.id === id);
 }
 
-function renderPlaylist(id) {
-  const pl = playlistById(id);
-  if (!pl) return (view.innerHTML = '<div class="empty">That playlist is not in your library anymore.</div>');
+// What the page on screen holds, so a click means the row that was drawn even if taste moves meanwhile.
+let shown = null;
+let paintToken = 0;
+const nowMs = () => clock.now().getTime();
+
+// The For you version: the playlist's songs ranked by taste, plus a few finds woven in.
+// Pages live at #/pl/<id> and #/station/<n>, and #/...?for-you shows the variant.
+const composeFor = (id, own) => composeVariant(own, loadVariants()[id], { taste: loadTaste(), liked: likedKeySet(lib.liked), now: nowMs() });
+const growing = new Set();
+async function growFor(id, own) {
+  if (growing.has(id)) return false;
+  growing.add(id);
+  try {
+    const out = await growFinds({
+      own,
+      state: loadVariants()[id],
+      taste: loadTaste(),
+      liked: likedKeySet(lib.liked),
+      today: dayKey(),
+      now: nowMs(),
+      radio: (vid) => api('radio', { id: vid }),
+      ensureId: async (t) => t.id || (await engine.resolve(t)).id,
+    });
+    const all = loadVariants();
+    all[id] = out.state;
+    saveVariants(all);
+    return out.added > 0 || out.retired > 0;
+  } catch {
+    return false;
+  } finally {
+    growing.delete(id);
+  }
+}
+
+const modeBar = (foryou, station) => `
+  <div class="fy-bar">
+    <div class="seg" role="tablist" aria-label="Version">
+      <button role="tab" class="${foryou ? '' : 'on'}" aria-selected="${!foryou}" data-act="foryou-off">Original</button>
+      <button role="tab" class="${foryou ? 'on' : ''}" aria-selected="${foryou}" data-act="foryou-on">${icon('spark', 'tiny')}For you</button>
+      <span class="seg-ink"></span>
+    </div>
+    ${foryou ? '<p class="fy-note">Learns from what you finish, skip and like. Grows a little each day.</p>' : station ? '<p class="fy-note">Tuning in gives you a fresh mix every time. For you lists the songs, picked for your taste.</p>' : ''}
+  </div>`;
+// The white pill under the switch is sized from the real button. After a flip it slides over from where it was.
+let segNow = null;
+let segFrom = null;
+function moveSegInk() {
+  const on = $('#view .seg button.on'), ink = $('#view .seg-ink');
+  if (!on || !ink || !on.offsetWidth) return;
+  const to = { w: on.offsetWidth, x: on.offsetLeft - 4 };
+  const put = (g) => {
+    ink.style.width = `${g.w}px`;
+    ink.style.transform = `translateX(${g.x}px)`;
+  };
+  ink.style.transition = 'none';
+  put(segFrom || to);
+  ink.getBoundingClientRect();
+  ink.style.transition = '';
+  put(to);
+  segNow = to;
+  segFrom = null;
+}
+document.fonts?.ready.then(moveSegInk);
+addEventListener('resize', moveSegInk);
+
+// One page for playlists, imported playlists and stations.
+function drawPage(pl, { quiet = false, loading = false } = {}) {
   const total = pl.tracks.reduce((a, t) => a + (t.duration || 0), 0);
+  const eyebrow = pl.liked ? 'Your favourites' : pl.station ? 'Station' : pl.kind === 'album' ? 'Album' : 'Playlist';
+  const facts = pl.station
+    ? pl.foryou
+      ? `${pl.note} · ${pl.tracks.length} songs${pl.finds ? ` · ${pl.finds} new for you` : ''}`
+      : pl.note
+    : `${pl.by ? `${esc(pl.by)} · ` : ''}${pl.tracks.length} songs${total ? ` · ${Math.round(total / 60)} min` : ''}${pl.foryou && pl.finds ? ` · ${pl.finds} new for you` : ''}`;
+  const cv = pl.liked
+    ? likedArt(icon('heartFill'))
+    : pl.station
+      ? stationArt(pl.name, pl.station.c)
+      : cover(pl.base || pl, 500);
+  const style = pl.station ? ` style="--c1:${pl.station.c[0]};--c2:${pl.station.c[1]};background:${pl.station.c[2]}"` : '';
+  const rows = loading
+    ? skeleton()
+    : pl.tracks.length
+      ? `<div class="rows numbered">${pl.tracks.map((t, i) => row(t, i, i + 1)).join('')}</div>`
+      : pl.station
+        ? ''
+        : '<div class="rows numbered"><div class="empty small">Tap the heart on any song and it lands here.</div></div>';
   view.innerHTML = `
-    <section class="pl-hero">
-      <div class="pl-hero-cover">${pl.liked ? likedArt(icon('heartFill')) : cover(pl, 500)}</div>
+    <section class="pl-hero${quiet ? ' quiet' : ''}">
+      <div class="pl-hero-cover"${style}>${cv}</div>
       <div class="pl-hero-text">
-        <span class="eyebrow">${pl.liked ? 'Your favourites' : pl.kind === 'album' ? 'Album' : 'Playlist'}${pl.source === 'spotify' ? ' · brought over from Spotify' : ''}</span>
+        <span class="eyebrow">${eyebrow}${pl.source === 'spotify' ? ' · brought over from Spotify' : ''}</span>
         <h2>${esc(pl.name)}</h2>
-        <p>${pl.by ? `${esc(pl.by)} · ` : ''}${pl.tracks.length} songs${total ? ` · ${Math.round(total / 60)} min` : ''}</p>
+        <p>${facts}</p>
         <div class="pl-actions">
           <button class="play big-play" data-act="play-pl" aria-label="Play">${icon('play')}</button>
-          <button class="pill" data-act="shuffle-pl">${icon('shuffle')} Shuffle</button>
-          ${pl.liked ? '' : `<button class="icon-btn" data-act="delete-pl" aria-label="Remove playlist">${icon('trash')}</button>`}
+          ${pl.station && !pl.foryou ? '' : `<button class="pill" data-act="shuffle-pl">${icon('shuffle')} Shuffle</button>`}
+          ${pl.liked || pl.station ? '' : `<button class="icon-btn" data-act="delete-pl" aria-label="Remove playlist">${icon('trash')}</button>`}
         </div>
       </div>
     </section>
-    <div class="rows numbered">${pl.tracks.length ? pl.tracks.map((t, i) => row(t, i, i + 1)).join('') : '<div class="empty small">Tap the heart on any song and it lands here.</div>'}</div>`;
+    ${pl.liked ? '' : modeBar(!!pl.foryou, !!pl.station)}
+    <div class="${quiet ? 'quiet' : ''}">${rows}</div>`;
+  moveSegInk();
   markPlayingRows();
   paintLikes();
+  paintArt(view);
+}
+
+function renderPlaylist(id, foryou = false, { quiet = false, grow = true } = {}) {
+  const base = playlistById(id);
+  if (!base) return (view.innerHTML = '<div class="empty">That playlist is not in your library anymore.</div>');
+  const token = ++paintToken;
+  foryou = foryou && !base.liked;
+  let pl = base;
+  if (foryou) {
+    const v = composeFor(id, base.tracks);
+    pl = { ...base, tracks: v.list, finds: v.finds, foryou: true, base };
+  }
+  shown = { key: `pl:${id}`, pl };
+  drawPage(pl, { quiet });
   fillArt(pl);
+  // Growing finds can take a moment (it asks for radio mixes), so the page draws first.
+  if (foryou && grow)
+    growFor(id, base.tracks).then((changed) => changed && token === paintToken && renderPlaylist(id, true, { quiet: true, grow: false }));
+}
+
+// A station has no song list of its own. The For you page lists its mix, ranked by taste.
+const stationMixes = new Map();
+function stationMix(s) {
+  if (!stationMixes.has(s.seed)) {
+    const job = (async () => {
+      const [hit] = await api('search', { q: s.seed, limit: 1 });
+      if (!hit) throw new Error(`Nothing found for “${s.seed}”`);
+      const mix = await api('radio', { id: hit.id });
+      return [hit, ...mix.filter((x) => x.id !== hit.id)];
+    })();
+    job.catch(() => stationMixes.delete(s.seed));
+    stationMixes.set(s.seed, job);
+  }
+  return stationMixes.get(s.seed).then((list) => list.map((x) => ({ ...x })));
+}
+function renderStation(i, foryou = false, { quiet = false, grow = true } = {}) {
+  const s = STATIONS[i];
+  if (!s) return (view.innerHTML = '<div class="empty">That station is not here anymore.</div>');
+  const token = ++paintToken;
+  const key = `station:${i}`;
+  const page = (tracks, finds, extra) => {
+    const pl = { id: s.seed, name: s.name, note: s.note, station: s, foryou, tracks, finds };
+    shown = { key, pl };
+    drawPage(pl, { quiet, ...extra });
+  };
+  if (!foryou) return page([], 0);
+  page([], 0, { loading: true });
+  stationMix(s).then(
+    (own) => {
+      if (token !== paintToken) return;
+      const v = composeFor(s.seed, own);
+      page(v.list, v.finds);
+      if (grow)
+        growFor(s.seed, own).then((changed) => changed && token === paintToken && renderStation(i, true, { quiet: true, grow: false }));
+    },
+    (e) => token === paintToken && (view.innerHTML = `<div class="empty">${esc(e.message)}</div>`),
+  );
+}
+
+// "Made for you" on home: variants of what you play most, once there is something to learn from.
+function madeForYou() {
+  const taste = loadTaste();
+  if (!hasSignal(taste)) return '';
+  const states = loadVariants();
+  const cards = [];
+  const seen = new Set();
+  const add = (key, card) => {
+    if (cards.length >= 4 || seen.has(key)) return;
+    seen.add(key);
+    const n = states[key]?.finds?.length || 0;
+    cards.push(`
+      <a class="pl-card fy-card" href="${card.href}">
+        <span class="pl-cover"${card.style || ''}>${card.art}<span class="fy-badge">${icon('spark', 'tiny')}For you</span><span class="shine"></span></span>
+        <b>${esc(card.name)}</b><span>For you${n ? ` · ${n} new` : ''}</span>
+      </a>`);
+  };
+  for (const { key } of topContexts(taste, nowMs())) {
+    const p = lib.playlists.find((x) => x.id === key);
+    const si = STATIONS.findIndex((x) => x.seed === key);
+    if (p) add(key, { href: `#/pl/${encodeURIComponent(p.id)}?for-you`, name: p.name, art: cover(p) });
+    else if (si >= 0) {
+      const st = STATIONS[si];
+      add(key, { href: `#/station/${si}?for-you`, name: st.name, art: stationArt(st.name, st.c), style: ` style="--c1:${st.c[0]};--c2:${st.c[1]};background:${st.c[2]}"` });
+    }
+  }
+  for (const p of lib.playlists) add(p.id, { href: `#/pl/${encodeURIComponent(p.id)}?for-you`, name: p.name, art: cover(p) });
+  if (!cards.length) return '';
+  return `
+    <section class="shelf">
+      <div class="shelf-head"><h3>Made for you</h3><span>Your playlists and stations, tuned by what you finish and skip.</span></div>
+      <div class="library fy-row">${cards.join('')}</div>
+    </section>`;
 }
 
 // Find each imported song on YouTube in the background so covers fade in.
@@ -679,6 +862,10 @@ async function fillArt(pl) {
 
 // Playlist covers morph into the playlist page and back.
 let prevHash = location.hash;
+const viewArg = (arg) => {
+  const q = arg.lastIndexOf('?');
+  return q < 0 ? { id: decodeURIComponent(arg), foryou: false } : { id: decodeURIComponent(arg.slice(0, q)), foryou: arg.slice(q + 1) === 'for-you' };
+};
 const plKey = (h) => h.match(/^#\/(pl\/.+|liked)$/)?.[1];
 const clearMorph = () => $$('[style*="view-transition-name"]').forEach((el) => (el.style.viewTransitionName = ''));
 
@@ -698,17 +885,20 @@ function route() {
   }
   const h = location.hash.slice(1) || '/';
   const [, kind, arg = ''] = h.match(/^\/(\w*)\/?(.*)$/) || [];
-  const param = decodeURIComponent(arg);
+  // Playlist and station pages can end in ?for-you
+  const { id: param, foryou } = kind === 'pl' || kind === 'station' ? viewArg(arg) : { id: decodeURIComponent(arg), foryou: false };
   body.classList.toggle('home', !kind || kind === 's');
   body.classList.toggle('searching', kind === 'search');
   if (kind !== 'search' && document.activeElement !== input) input.value = '';
   const paint = () => {
+    paintToken++;
     if (!kind) renderHome();
     else if (kind === 'search') {
       if (input.value !== param) input.value = param;
       runSearch(param);
     } else if (kind === 'liked') renderPlaylist('liked');
-    else if (kind === 'pl') renderPlaylist(param);
+    else if (kind === 'pl') renderPlaylist(param, foryou);
+    else if (kind === 'station') renderStation(Number(param), foryou);
     else if (kind === 's' && param) {
       renderHome();
       if ((current()?.playId || current()?.id) !== param) playYouTube(param, { autoplay: false }).then(() => openNP('lyrics'));
@@ -790,10 +980,20 @@ function viewList() {
   const h = location.hash;
   if (h.startsWith('#/search')) return results;
   if (h.startsWith('#/liked')) return lib.liked;
-  if (h.startsWith('#/pl/')) return playlistById(decodeURIComponent(h.slice(5)))?.tracks || [];
+  if (/^#\/(pl|station)\//.test(h)) return viewPlaylist()?.tracks || [];
   return [];
 }
-const viewPlaylist = () => playlistById(location.hash.startsWith('#/liked') ? 'liked' : decodeURIComponent(location.hash.slice(5)));
+// The playlist or station on screen, as drawn (the For you version when that is what is showing).
+function viewPlaylist() {
+  const h = location.hash;
+  if (h.startsWith('#/liked')) return playlistById('liked');
+  const m = h.match(/^#\/(pl|station)\/(.*)$/);
+  if (!m) return null;
+  const { id } = viewArg(m[2]);
+  const key = m[1] === 'pl' ? `pl:${id}` : `station:${id}`;
+  return shown?.key === key ? shown.pl : m[1] === 'pl' ? playlistById(id) : null;
+}
+const plCtx = (pl) => ({ name: pl.foryou ? `${pl.name} · For you` : pl.name, href: location.hash, key: pl.liked ? undefined : pl.id });
 
 view.addEventListener('pointerover', (e) => {
   const s = e.target.closest('[data-station]');
@@ -821,9 +1021,20 @@ view.addEventListener('click', (e) => {
     const i = Number(play.dataset.play);
     if (location.hash.startsWith('#/search')) return playResult(i);
     const pl = viewPlaylist();
-    if (pl) engine.playList(pl.tracks, i, { name: pl.name, href: location.hash }, { keepOrder: true });
+    if (pl?.tracks.length) engine.playList(pl.tracks, i, plCtx(pl), { keepOrder: true });
   }
 });
+
+// Flip between Original and For you without adding a history entry.
+function setMode(on) {
+  const m = location.hash.match(/^#\/(pl|station)\/([^?]*)/);
+  if (!m) return;
+  history.replaceState(null, '', `#/${m[1]}/${m[2]}${on ? '?for-you' : ''}`);
+  prevHash = location.hash;
+  segFrom = segNow;
+  if (m[1] === 'pl') renderPlaylist(decodeURIComponent(m[2]), on);
+  else renderStation(Number(m[2]), on);
+}
 
 const actions = {
   toggle: () => (current() ? engine.toggle() : startStation(STATIONS[Math.floor(Math.random() * STATIONS.length)])),
@@ -896,18 +1107,23 @@ const actions = {
   },
   'play-pl'() {
     const pl = viewPlaylist();
-    if (pl?.tracks.length) engine.playList(pl.tracks, 0, { name: pl.name, href: location.hash }, { keepOrder: !engine.shuffle });
+    if (pl?.station && !pl.foryou) return startStation(pl.station);
+    if (pl?.tracks.length) engine.playList(pl.tracks, 0, plCtx(pl), { keepOrder: !engine.shuffle });
   },
   'shuffle-pl'() {
     const pl = viewPlaylist();
     if (!pl?.tracks.length) return;
     const list = [...pl.tracks].sort(() => Math.random() - 0.5);
-    engine.playList(list, 0, { name: pl.name, href: location.hash }, { keepOrder: true });
+    engine.playList(list, 0, plCtx(pl), { keepOrder: true });
   },
+  'foryou-on': () => setMode(true),
+  'foryou-off': () => setMode(false),
   'delete-pl'() {
-    const id = decodeURIComponent(location.hash.slice(5));
+    const id = viewPlaylist()?.id;
     lib.playlists = lib.playlists.filter((p) => p.id !== id);
     saveLib();
+    const states = loadVariants();
+    if (states[id]) delete states[id], saveVariants(states);
     toast('Playlist removed');
     location.hash = '#/';
   },
@@ -1183,7 +1399,7 @@ async function popOut() {
 // ---------- boot ----------
 
 // Handy for debugging and end-to-end tests.
-window.__hum = { engine };
+window.__hum = { engine, lib, store };
 
 initImages();
 initTilt(view);
