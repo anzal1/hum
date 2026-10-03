@@ -6,6 +6,7 @@ import { readFile } from 'node:fs/promises';
 import { extname, join, normalize } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { handlers } from './api/_core.js';
+import { SYNC_MAX, syncId } from './api/sync.js';
 
 const root = fileURLToPath(new URL('./public/', import.meta.url));
 const types = {
@@ -84,6 +85,50 @@ async function remoteRoute(req, res, path) {
   send(res, 404, { error: 'Not found' });
 }
 
+// ---------- sync proxy ----------
+
+// The local hum has no database. It forwards sync calls to the website (or HUM_SYNC_URL),
+// so both share one encrypted library. HUM_SYNC=off turns it off. The data stays ciphertext.
+const syncBase = (() => {
+  const u = (process.env.HUM_SYNC_URL || 'https://hum.anzalabidi.dev/api/sync').replace(/\/+$/, '');
+  return u.includes('/api/sync') ? u : `${u}/api/sync`;
+})();
+const syncOff = /^(off|0|false|no)$/i.test(process.env.HUM_SYNC || '');
+const passHeaders = ['x-sync-version', 'x-sync-updated', 'retry-after'];
+
+async function syncRoute(req, res, url) {
+  if (syncOff) return send(res, 501, { error: 'Sync is turned off (HUM_SYNC=off)' });
+  const id = url.pathname.replace(/^\/api\/sync\/?/, '');
+  if (id && !syncId(id)) return send(res, 400, { error: 'Bad sync id' });
+  if (!['GET', 'PUT'].includes(req.method)) return send(res, 405, { error: 'GET or PUT only' });
+  let body;
+  if (req.method === 'PUT') {
+    const chunks = [];
+    let size = 0;
+    for await (const c of req) {
+      size += c.length;
+      if (size > SYNC_MAX) return send(res, 413, { error: `Too big. The limit is ${SYNC_MAX / 1024} KB` });
+      chunks.push(c);
+    }
+    body = Buffer.concat(chunks);
+  }
+  try {
+    const target = `${syncBase}${id ? `/${id}` : ''}${id && url.searchParams.has('since') ? `?since=${encodeURIComponent(url.searchParams.get('since'))}` : ''}`;
+    const up = await fetch(target, {
+      method: req.method,
+      headers: { ...(body && { 'Content-Type': 'application/octet-stream', 'X-Sync-Base': String(req.headers['x-sync-base'] || '') }), 'User-Agent': 'hum-local' },
+      body,
+      signal: AbortSignal.timeout(15000),
+    });
+    const out = { 'Cache-Control': 'no-store', 'Content-Type': up.headers.get('content-type') || 'application/octet-stream' };
+    for (const h of passHeaders) up.headers.get(h) && (out[h] = up.headers.get(h));
+    res.writeHead(up.status, out);
+    res.end(Buffer.from(await up.arrayBuffer()));
+  } catch {
+    send(res, 502, { error: 'Could not reach the sync server' });
+  }
+}
+
 // ---------- http ----------
 
 export function startServer({ port = Number(process.env.PORT) || 3737, host = process.env.HOST || '127.0.0.1', log = console.log } = {}) {
@@ -93,6 +138,7 @@ export function startServer({ port = Number(process.env.PORT) || 3737, host = pr
     // Remote control is for your own machine only, even when hum is served to a network (Docker).
     if (rem && !/^(::1|127\.|::ffff:127\.)/.test(req.socket.remoteAddress || '')) return send(res, 403, { error: 'Remote control is local only' });
     if (rem) return remoteRoute(req, res, rem[1]);
+    if (url.pathname === '/api/sync' || url.pathname.startsWith('/api/sync/')) return syncRoute(req, res, url);
     const shared = url.pathname.match(/^\/s\/([\w-]{11})$/);
     if (shared) url.pathname = '/api/share', url.searchParams.set('id', shared[1]);
     const api = url.pathname.match(/^\/api\/(\w+)$/);

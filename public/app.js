@@ -6,6 +6,7 @@ import { icon } from './icons.js';
 import { genArt, likedArt, stationArt, paintArt, initArtMotion, Favicon } from './art.js';
 import { initImages, initTilt, initPeek } from './fx.js';
 import { attachListener, loadTaste, loadVariants, saveVariants, composeVariant, growFinds, hasSignal, topContexts, dayKey, clock, likedKeySet } from './taste.js';
+import { initSync } from './sync-ui.js';
 
 const $ = (s, el = document) => el.querySelector(s);
 const $$ = (s, el = document) => [...el.querySelectorAll(s)];
@@ -481,7 +482,7 @@ function renderHome() {
         : ''
     }
     <section class="shelf">
-      <div class="shelf-head"><h3>Your library</h3></div>
+      <div class="shelf-head"><h3>Your library</h3><div data-sync-slot></div></div>
       <div class="library">
         <a class="pl-card liked-card" href="#/liked">
           <span class="pl-cover">${likedArt(icon('heartFill'))}<span class="shine"></span></span>
@@ -1448,6 +1449,22 @@ paintModes();
 setPlaying(false);
 if (!/^#\/s\//.test(location.hash)) restore();
 route();
+
+// ---------- sync (all of it lives in sync.js and sync-ui.js) ----------
+
+initSync({
+  store,
+  toast,
+  // A pull changed the library on disk: reload it and redraw the page we are on.
+  onMerged() {
+    lib.liked = store.get('liked', []);
+    lib.recent = store.get('recent', []);
+    lib.playlists = store.get('playlists', []);
+    paintLikes();
+    if (/^(#\/?|#\/liked|#\/pl\/.+|#\/station\/.+)?$/.test(location.hash)) route();
+  },
+});
+
 const ro = new ResizeObserver(() => placeStage());
 ro.observe($('#np-slot'));
 ro.observe($('#side-slot'));
