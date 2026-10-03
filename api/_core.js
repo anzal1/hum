@@ -91,20 +91,17 @@ function mixTracks(data, limit = 50) {
 }
 
 export async function radio(id) {
+  // get_queue answers from Cloudflare, where YouTube refuses next. Its mix leaves the seed out,
+  // so the seed is fetched alongside. next stays as the fallback.
   try {
-    return mixTracks(await ytm('next', { videoId: id, playlistId: `RDAMVM${id}`, isAudioOnly: true }));
-  } catch (err) {
-    // The queue for the mix leaves the seed out, so fetch it alongside.
     const [mix, seed] = await Promise.all([
       ytm('music/get_queue', { playlistId: `RDAMVM${id}` }),
       ytm('music/get_queue', { videoIds: [id] }),
-    ]).catch(() => {
-      throw err;
-    });
+    ]);
     const out = mixTracks({ seed, mix });
-    if (!out.length) throw err;
-    return out;
-  }
+    if (out.length > 1) return out;
+  } catch {}
+  return mixTracks(await ytm('next', { videoId: id, playlistId: `RDAMVM${id}`, isAudioOnly: true }));
 }
 
 // Plain YouTube results, used when a song's main upload refuses to play embedded.
