@@ -5,7 +5,7 @@ Every song ever made, free, in a player that feels like a room lit by the album 
 - Search any song, or paste a Spotify playlist, album or track link (or press ⌘V anywhere).
 - Tap a station and it plays forever in that mood.
 - Time-synced lyrics, an endless autoplay mix, liked songs, shareable song links.
-- No accounts, no keys, no database. Your library lives in your browser.
+- No accounts and no keys. Your library lives in your browser, and [sync](#sync-your-library) can carry it between devices without an account.
 
 Playback runs through YouTube's official embedded player, so ads and royalties work the normal way and artists still get paid.
 
@@ -39,6 +39,48 @@ hum is a folder of static files plus one small function, so it fits the free tie
 Vercel works too (`api/` and `vercel.json` are ready), but its free plan is for non-commercial use.
 
 Tested: `node server.js`, `npx` from a packed tarball, Docker, and Cloudflare's own runtime locally (`npx wrangler dev`). Every route answered in all four.
+
+## Sync your library
+
+Your likes, playlists and history normally live in one browser, so clearing site data loses them and a second device starts empty. Sync fixes that without an account, an email or a login.
+
+**Use it.** Open the home page, find **Your library**, press **Sync**, then **Turn on sync**. You get a code like `W6R1-BA1V-1BME-RGNM-GRTQ-X2PG-J8EG` and a copy button. On another device (or the local hum), press **Sync**, **Use a sync code**, and type it in. A typo is caught by a checksum before anything happens. **Turn off sync** stops it on that device and keeps your library there. **Export library** and **Import** in the same panel make a JSON backup you can restore anywhere; importing adds to what you have and never replaces it.
+
+**What syncs.** `liked`, `playlists`, `recent`, and the `taste` and `variants` values when they exist. Volume, shuffle, the current queue and layout stay per device.
+
+**How it works.**
+
+- The code is 128 random bits (plus an 8-bit checksum), made in your browser.
+- WebCrypto turns it into two unrelated things with HKDF: a record id and an AES-256-GCM key. The key never leaves the page.
+- The library is compressed, encrypted, and sent as one blob. The server sees the id, the ciphertext, its size and when it changed. It never sees the code, the key or a single song name. The blob is also bound to its id, so it cannot be swapped under another one.
+- Pulling merges instead of overwriting: likes and playlists are unioned, the newest edit of a playlist wins, a removal travels as a tombstone so it is not undone by a device that still has the old copy, history merges by play time (30 kept), and `taste` takes the max of every counter and timestamp. Local data is never dropped to make room for remote data.
+- Pushes wait about 5 seconds after a change and go out at most once per 30 seconds. hum pulls on load, on focus and every minute while visible, never more than once a minute. Each write names the version it was based on; if another device got there first, hum pulls, merges and retries.
+
+**Privacy and limits.**
+
+- Anyone who has the code can read and change your library, and nobody can recover a lost code. Keep it in a password manager.
+- The code is stored in your browser's localStorage (key `hum:sync`) so sync can run, so anyone with access to your browser profile has it. Turning sync off removes it.
+- Turning sync off does not delete the encrypted copy on the server. Without the code it is unreadable noise.
+- The server can see that an id exists and when it was written. It could refuse service or serve you an older ciphertext, but it cannot read or forge your data.
+- The blob is capped at 512 KB (roughly 5,000 liked songs, since it is compressed), and the server accepts one write per id every 10 seconds.
+
+**The local hum and the website share one library.** They are different origins, so they cannot share browser storage, but the local server (`node server.js`, `npx github:anzal1/hum`) forwards `/api/sync` to `https://hum.anzalabidi.dev/api/sync` by default. Enter the same code in both and they stay in step. Only ciphertext passes through the proxy.
+
+| Variable | Does |
+| --- | --- |
+| `HUM_SYNC_URL` | Sync server to forward to, for example your own Worker: `https://hum.you.workers.dev/api/sync`. |
+| `HUM_SYNC=off` | No sync from this local server. The panel then offers only Export and Import. |
+
+**Self-hosting sync on Cloudflare D1.** Sync needs a D1 database bound as `SYNC`. Without one the routes answer `501` and the page hides the sync controls, so everything else works as before.
+
+```bash
+npx wrangler d1 create hum-sync                      # copy the database_id it prints
+# paste it into wrangler.jsonc (both d1_databases blocks), then:
+npx wrangler d1 migrations apply hum-sync --remote
+npx wrangler deploy                                  # or: --env production
+```
+
+If you do not want sync, delete the two `d1_databases` blocks from `wrangler.jsonc`; the placeholder id there will not deploy. To try it locally: `npx wrangler d1 migrations apply hum-sync --local && npx wrangler dev --local`. The table is one row per library: `blobs(id, data, version, updated)` in `migrations/0001_blobs.sql`.
 
 ## Put hum inside your app
 
@@ -138,7 +180,7 @@ Song links look like `/s/<id>`. Chat apps and social sites see the song's own co
 
 ## Tests
 
-`test/e2e.js` is an end-to-end suite of 52 checks covering every search path, button, slider, switch, list action, keyboard shortcut, the widget, share pages and the remote. It passes in Chromium, Firefox and WebKit (Safari's engine). Serve it next to the app (`cp test/e2e.js public/__e2e.js`), start the app, press play once, then run in the console:
+`test/e2e.js` is an end-to-end suite of 71 checks covering every search path, button, slider, switch, list action, keyboard shortcut, the widget, share pages, the remote and sync (key derivation, encrypt and decrypt, a wrong code failing, every merge rule, and two devices converging through a fake server). It passes in Chromium, Firefox and WebKit (Safari's engine). Serve it next to the app (`cp test/e2e.js public/__e2e.js`), start the app, press play once, then run in the console:
 
 ```js
 (await import('/__e2e.js')).run().then((r) => console.table(r))
