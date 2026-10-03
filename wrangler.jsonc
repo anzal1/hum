@@ -4,13 +4,10 @@
   "main": "worker.js",
   "compatibility_date": "2025-09-01",
   "assets": { "directory": "./public", "binding": "ASSETS" },
-  // Encrypted library sync (optional). The database_id below is a PLACEHOLDER.
-  // Create your own and paste its id here, then apply the migration:
-  //   npx wrangler d1 create hum-sync
+  // Encrypted library sync is optional. To turn it on for your copy, create a database,
+  // add a block like the one under env.production with your own database_id, then:
   //   npx wrangler d1 migrations apply hum-sync --remote
-  // Without a real id `wrangler deploy` will refuse, so delete the d1_databases blocks
-  // (here and under env.production) if you do not want sync. The app then hides it.
-  "d1_databases": [{ "binding": "SYNC", "database_name": "hum-sync", "database_id": "00000000-0000-0000-0000-000000000000", "migrations_dir": "migrations" }],
+  // Without it the app still works and offers export and import instead.
   // The official site: `npx wrangler deploy --env production`
   "env": {
     "production": {
@@ -18,7 +15,7 @@
       "assets": { "directory": "./public", "binding": "ASSETS" },
       "routes": [{ "pattern": "hum.anzalabidi.dev", "custom_domain": true }],
       // Environments do not inherit bindings, so the sync database is declared again.
-      "d1_databases": [{ "binding": "SYNC", "database_name": "hum-sync", "database_id": "00000000-0000-0000-0000-000000000000", "migrations_dir": "migrations" }]
+      "d1_databases": [{ "binding": "SYNC", "database_name": "hum-sync", "database_id": "a3da76f6-6ab3-4a00-8b2d-9444402cacee", "migrations_dir": "migrations" }]
     }
   }
 }

@@ -71,16 +71,17 @@ Your likes, playlists and history normally live in one browser, so clearing site
 | `HUM_SYNC_URL` | Sync server to forward to, for example your own Worker: `https://hum.you.workers.dev/api/sync`. |
 | `HUM_SYNC=off` | No sync from this local server. The panel then offers only Export and Import. |
 
-**Self-hosting sync on Cloudflare D1.** Sync needs a D1 database bound as `SYNC`. Without one the routes answer `501` and the page hides the sync controls, so everything else works as before.
+**Self-hosting sync on Cloudflare D1.** Sync needs a D1 database bound as `SYNC`. Without one the routes answer `501` and the page offers only Export and Import, and everything else works as before.
 
 ```bash
 npx wrangler d1 create hum-sync                      # copy the database_id it prints
-# paste it into wrangler.jsonc (both d1_databases blocks), then:
+# add to wrangler.jsonc, at the top level:
+#   "d1_databases": [{ "binding": "SYNC", "database_name": "hum-sync", "database_id": "<yours>", "migrations_dir": "migrations" }]
 npx wrangler d1 migrations apply hum-sync --remote
-npx wrangler deploy                                  # or: --env production
+npx wrangler deploy
 ```
 
-If you do not want sync, delete the two `d1_databases` blocks from `wrangler.jsonc`; the placeholder id there will not deploy. To try it locally: `npx wrangler d1 migrations apply hum-sync --local && npx wrangler dev --local`. The table is one row per library: `blobs(id, data, version, updated)` in `migrations/0001_blobs.sql`.
+The block under `env.production` is the official site's database; leave it or replace it with yours. To try it locally: `npx wrangler d1 migrations apply hum-sync --local && npx wrangler dev --local`. The table is one row per library: `blobs(id, data, version, updated)` in `migrations/0001_blobs.sql`.
 
 ## Put hum inside your app
 
